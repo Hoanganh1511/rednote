@@ -24,6 +24,10 @@ export class UsersService {
     return this.userRepo.findOne({ where: { username } });
   }
 
+  async findByPhone(phoneNumber: string): Promise<UserEntity | null> {
+    return this.userRepo.findOne({ where: { phoneNumber } });
+  }
+
   async create(data: Partial<UserEntity>): Promise<UserEntity> {
     const user = this.userRepo.create(data);
     return this.userRepo.save(user);

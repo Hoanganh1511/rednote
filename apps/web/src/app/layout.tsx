@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { Header } from '@/components/layout/header';
+import { HomeBanner } from '@/components/layout/home-banner';
 import { CategoryTabs } from '@/components/layout/category-tabs';
 import { MobileNav } from '@/components/layout/mobile-nav';
 
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <div className="flex min-h-screen flex-col">
             <Header />
+            <HomeBanner />
             <CategoryTabs />
             <main className="mx-auto w-full max-w-screen-xl flex-1 overflow-auto px-3 pt-6 pb-20 md:px-4 md:pt-8 md:pb-4">
               {children}

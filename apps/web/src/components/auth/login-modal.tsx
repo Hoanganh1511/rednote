@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
+import { apiClient } from '@/lib/api-client';
+import { useUserStore } from '@/stores/user-store';
+import type { AuthTokens, User } from 'shared-types';
 
 const TABS = [
   { id: 'password', label: 'Đăng nhập mật khẩu' },
@@ -20,6 +23,89 @@ interface LoginModalProps {
 export function LoginModal({ open, onClose }: LoginModalProps) {
   const [tab, setTab] = useState<TabId>('password');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+
+  const setTokens = useUserStore((s) => s.setTokens);
+  const setUser = useUserStore((s) => s.setUser);
+
+  const fetchAndStoreUser = async () => {
+    const { data } = await apiClient.get<{ data: User }>('/auth/me');
+    setUser(data.data);
+  };
+
+  const resetError = () => setError('');
+
+  const handlePasswordLogin = async () => {
+    if (!identifier || !password) return setError('Vui lòng nhập đầy đủ thông tin');
+    setLoading(true);
+    setError('');
+    try {
+      const { data } = await apiClient.post<{ data: AuthTokens }>('/auth/login', { identifier, password });
+      setTokens(data.data);
+      await fetchAndStoreUser();
+      onClose();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message;
+      setError(msg ?? 'Đăng nhập thất bại');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendOtp = async () => {
+    if (!phoneNumber) return setError('Vui lòng nhập số điện thoại');
+    setLoading(true);
+    setError('');
+    try {
+      await apiClient.post('/auth/otp/send', { phoneNumber });
+      setOtpSent(true);
+      setOtpCooldown(120);
+      const timer = setInterval(() => {
+        setOtpCooldown((v) => {
+          if (v <= 1) { clearInterval(timer); return 0; }
+          return v - 1;
+        });
+      }, 1000);
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message;
+      setError(msg ?? 'Gửi OTP thất bại');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpLogin = async () => {
+    if (!phoneNumber || !otpCode) return setError('Vui lòng nhập đầy đủ thông tin');
+    setLoading(true);
+    setError('');
+    try {
+      const { data } = await apiClient.post<{ data: AuthTokens }>('/auth/otp/verify', { phoneNumber, code: otpCode });
+      setTokens(data.data);
+      await fetchAndStoreUser();
+      onClose();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message;
+      setError(msg ?? 'Mã OTP không hợp lệ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (tab === 'password') handlePasswordLogin();
+    else handleOtpLogin();
+  };
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -29,7 +115,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => { setTab(t.id); resetError(); }}
               className={cn(
                 'pb-3 text-sm font-medium whitespace-nowrap transition-colors',
                 tab === t.id
@@ -48,7 +134,9 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
             <FormRow label="Tài khoản">
               <input
                 type="text"
-                placeholder="Vui lòng nhập số tài khoản"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="Tên tài khoản hoặc email"
                 className="field"
               />
             </FormRow>
@@ -56,6 +144,9 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               <div className="relative w-full">
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                   placeholder="Vui lòng nhập mật khẩu"
                   className="field pr-10"
                 />
@@ -69,10 +160,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               </div>
             </FormRow>
             <div className="flex justify-end">
-              <button
-                type="button"
-                className="text-xs text-[#00aeec] transition-opacity hover:opacity-75"
-              >
+              <button type="button" className="text-xs text-[#00aeec] transition-opacity hover:opacity-75">
                 Quên mật khẩu?
               </button>
             </div>
@@ -85,7 +173,9 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
             <FormRow label="Số điện thoại">
               <input
                 type="tel"
-                placeholder="Nhập số điện thoại"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="+84912345678"
                 className="field"
               />
             </FormRow>
@@ -93,34 +183,48 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               <div className="flex w-full gap-2">
                 <input
                   type="text"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                   placeholder="Nhập mã OTP"
                   className="field flex-1"
+                  maxLength={6}
                 />
                 <button
                   type="button"
-                  className="shrink-0 rounded-lg border border-[#00aeec] px-3 py-2 text-xs text-[#00aeec] transition-colors hover:bg-[#00aeec]/10"
+                  onClick={handleSendOtp}
+                  disabled={loading || otpCooldown > 0}
+                  className="shrink-0 rounded-lg border border-[#00aeec] px-3 py-2 text-xs text-[#00aeec] transition-colors hover:bg-[#00aeec]/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Lấy mã
+                  {otpCooldown > 0 ? `${otpCooldown}s` : 'Lấy mã'}
                 </button>
               </div>
             </FormRow>
+            {otpSent && (
+              <p className="text-xs text-green-600">Mã OTP đã được gửi đến {phoneNumber}</p>
+            )}
           </div>
         )}
+
+        {/* Error */}
+        {error && <p className="mt-3 text-xs text-red-500">{error}</p>}
 
         {/* Action buttons */}
         <div className="mt-6 flex gap-3">
           <button
             type="button"
-            onClick={() => setTab('sms')}
+            onClick={() => { setTab('sms'); resetError(); }}
             className="flex-1 rounded-lg border border-input py-2.5 text-sm font-medium transition-colors hover:bg-accent"
           >
             Đăng ký
           </button>
           <button
             type="button"
-            className="flex-1 rounded-lg bg-[#00aeec] py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="flex-1 rounded-lg bg-[#00aeec] py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            Đăng nhập
+            {loading ? 'Đang xử lý...' : 'Đăng nhập'}
           </button>
         </div>
 
@@ -133,34 +237,16 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
         {/* Social login */}
         <div className="flex justify-center gap-4 sm:gap-6">
-          <SocialButton label="Google">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white shadow-sm">
-              <GoogleIcon />
-            </div>
-          </SocialButton>
-          <SocialButton label="Facebook">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1877f2]">
-              <FacebookIcon />
-            </div>
-          </SocialButton>
-          <SocialButton label="Apple ID">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black">
-              <AppleIcon />
-            </div>
-          </SocialButton>
+          <SocialButton label="Google"><div className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white shadow-sm"><GoogleIcon /></div></SocialButton>
+          <SocialButton label="Facebook"><div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1877f2]"><FacebookIcon /></div></SocialButton>
+          <SocialButton label="Apple ID"><div className="flex h-11 w-11 items-center justify-center rounded-full bg-black"><AppleIcon /></div></SocialButton>
         </div>
 
         <p className="mt-5 text-center text-[11px] leading-relaxed text-muted-foreground">
-          Nếu bạn chưa đăng ký số điện thoại di động, chúng tôi sẽ tự động giúp bạn đăng ký tài
-          khoản. Đăng nhập hoặc hoàn tất đăng ký để đồng ý{' '}
-          <span className="cursor-pointer text-[#00aeec] hover:opacity-80">
-            Thỏa thuận người dùng
-          </span>{' '}
+          Nếu bạn chưa đăng ký số điện thoại di động, chúng tôi sẽ tự động giúp bạn đăng ký tài khoản. Đăng nhập hoặc hoàn tất đăng ký để đồng ý{' '}
+          <span className="cursor-pointer text-[#00aeec] hover:opacity-80">Thỏa thuận người dùng</span>{' '}
           và{' '}
-          <span className="cursor-pointer text-[#00aeec] hover:opacity-80">
-            Chính sách bảo mật
-          </span>
-          .
+          <span className="cursor-pointer text-[#00aeec] hover:opacity-80">Chính sách bảo mật</span>.
         </p>
       </div>
     </Modal>

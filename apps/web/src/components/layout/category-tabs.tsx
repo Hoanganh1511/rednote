@@ -29,15 +29,15 @@ export function CategoryTabs() {
     <div className="sticky top-16 z-40 border-b border-border bg-background">
       {/* Category chips - horizontal scroll */}
       <div className="relative">
-        <div className="scrollbar-hide mx-auto flex w-full max-w-screen-xl items-center gap-2 overflow-x-auto px-4 py-3">
+        <div className="scrollbar-hide mx-auto flex w-full max-w-screen-xl items-center gap-3 overflow-x-auto px-4 py-4">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setCategory(category === cat.id ? null : cat.id)}
               className={cn(
-                'shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                'shrink-0 rounded px-4 py-1.5 text-xs font-medium transition-colors',
                 category === cat.id
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-[#00aeec]/10 text-[#00aeec] font-semibold'
                   : 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground',
               )}
             >

@@ -9,15 +9,15 @@ export class UserEntity extends BaseEntity {
   @Column({ unique: true })
   username: string;
 
-  @Index({ unique: true })
-  @Column({ unique: true })
-  email: string;
+  @Index({ unique: true, sparse: true })
+  @Column({ type: 'varchar', unique: true, nullable: true, default: null })
+  email: string | null;
 
-  @Column({ name: 'password_hash' })
-  passwordHash: string;
+  @Column({ name: 'password_hash', type: 'varchar', nullable: true, default: null })
+  passwordHash: string | null;
 
-  @Column({ name: 'display_name' })
-  displayName: string;
+  @Column({ name: 'display_name', type: 'varchar', nullable: true, default: null })
+  displayName: string | null;
 
   @Column({ name: 'avatar_url', nullable: true, type: 'text' })
   avatarUrl: string | null;
@@ -36,6 +36,10 @@ export class UserEntity extends BaseEntity {
 
   @Column({ name: 'video_count', default: 0 })
   videoCount: number;
+
+  @Index({ unique: true, sparse: true })
+  @Column({ name: 'phone_number', nullable: true, unique: true, type: 'varchar', length: 20 })
+  phoneNumber: string | null;
 
   @Column({ name: 'refresh_token', nullable: true, type: 'text' })
   refreshToken: string | null;

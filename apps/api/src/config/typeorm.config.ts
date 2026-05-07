@@ -10,7 +10,7 @@ export const typeOrmConfig = (config: ConfigService): TypeOrmModuleOptions => ({
   database: config.getOrThrow<string>('DB_NAME'),
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-  synchronize: process.env['NODE_ENV'] === 'development',
+  synchronize: false,
   logging: process.env['NODE_ENV'] === 'development',
   ssl: process.env['NODE_ENV'] === 'production' ? { rejectUnauthorized: false } : false,
 });

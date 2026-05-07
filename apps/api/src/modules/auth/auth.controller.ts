@@ -1,9 +1,11 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { SendOtpDto } from './dto/send-otp.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { UserEntity } from '../users/user.entity';
@@ -16,7 +18,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  @ApiOperation({ summary: 'Register a new account' })
+  @ApiOperation({ summary: 'Register with email + password' })
   async register(@Body() dto: RegisterDto): Promise<AuthTokens> {
     return this.authService.register(dto);
   }
@@ -24,9 +26,25 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiOperation({ summary: 'Login with username/email + password' })
   async login(@Body() dto: LoginDto): Promise<AuthTokens> {
     return this.authService.login(dto);
+  }
+
+  @Public()
+  @Post('otp/send')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send OTP to phone number' })
+  async sendOtp(@Body() dto: SendOtpDto): Promise<{ message: string; devOtp?: string }> {
+    return this.authService.sendOtp(dto);
+  }
+
+  @Public()
+  @Post('otp/verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify OTP and login (or auto-register)' })
+  async verifyOtp(@Body() dto: VerifyOtpDto): Promise<AuthTokens> {
+    return this.authService.verifyOtp(dto);
   }
 
   @Public()
@@ -34,11 +52,16 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
   async refresh(@Body() dto: RefreshTokenDto): Promise<AuthTokens> {
-    // Decode without verification to get sub — actual validation is in issueTokens
     const decoded = JSON.parse(
       Buffer.from(dto.refreshToken.split('.')[1]!, 'base64').toString(),
     ) as { sub: string };
     return this.authService.refreshTokens(decoded.sub, dto.refreshToken);
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: 'Get current authenticated user' })
+  async me(@CurrentUser() user: UserEntity): Promise<UserEntity> {
+    return user;
   }
 
   @Post('logout')

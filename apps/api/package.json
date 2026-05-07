@@ -10,9 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "migration:generate": "typeorm migration:generate -d src/config/data-source.ts",
-    "migration:run": "typeorm migration:run -d src/config/data-source.ts",
-    "migration:revert": "typeorm migration:revert -d src/config/data-source.ts"
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/config/data-source.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/config/data-source.ts"
   },
   "dependencies": {
     "@fastify/static": "^7.0.4",
@@ -43,6 +43,7 @@
     "rxjs": "^7.8.1",
     "shared-types": "workspace:*",
     "socket.io": "^4.8.1",
+    "twilio": "^6.0.1",
     "typeorm": "^0.3.20"
   },
   "devDependencies": {
