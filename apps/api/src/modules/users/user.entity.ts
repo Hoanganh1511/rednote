@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import { Column, Entity, Index } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 
@@ -13,6 +14,7 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'varchar', unique: true, nullable: true, default: null })
   email: string | null;
 
+  @Exclude()
   @Column({ name: 'password_hash', type: 'varchar', nullable: true, default: null })
   passwordHash: string | null;
 
@@ -41,6 +43,16 @@ export class UserEntity extends BaseEntity {
   @Column({ name: 'phone_number', nullable: true, unique: true, type: 'varchar', length: 20 })
   phoneNumber: string | null;
 
+  @Column({ type: 'varchar', length: 10, nullable: true, default: null })
+  gender: 'male' | 'female' | 'other' | null;
+
+  @Column({ type: 'date', nullable: true, default: null })
+  birthday: string | null;
+
+  @Column({ name: 'username_changed_at', type: 'timestamptz', nullable: true, default: null })
+  usernameChangedAt: Date | null;
+
+  @Exclude()
   @Column({ name: 'refresh_token', nullable: true, type: 'text' })
   refreshToken: string | null;
 }

@@ -1,12 +1,17 @@
 export type UserRole = 'user' | 'creator' | 'admin';
+export type UserGender = 'male' | 'female' | 'other';
 
 export interface User {
   id: string;
   username: string;
-  email: string;
-  displayName: string;
+  email: string | null;
+  phoneNumber: string | null;
+  hasPassword: boolean;
+  displayName: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  gender: UserGender | null;
+  birthday: string | null;
   role: UserRole;
   followerCount: number;
   followingCount: number;

@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, MessageCircle, Bookmark, ChevronRight, LogOut, ScanEye, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
 import { LoginModal } from '@/components/auth/login-modal';
 import { useUserStore } from '@/stores/user-store';
 import { apiClient } from '@/lib/api-client';
@@ -26,24 +26,28 @@ const MENU_ITEMS = [
   { label: 'Các dịch vụ được đề xuất', href: '/services' },
 ] as const;
 
-export function Header() {
+const COLLECTION_TABS = [
+  { id: 'default', label: 'Mặc định', count: 0 },
+  { id: 'watchlater', label: 'Xem sau', count: 0 },
+] as const;
+
+type CollectionTabId = (typeof COLLECTION_TABS)[number]['id'];
+
+export function AccountHeader() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const user = useUserStore((s) => s.user);
-  const pathname = usePathname();
-  const isHome = pathname === '/';
 
   useEffect(() => setMounted(true), []);
 
   return (
     <>
       <header
-        className={cn(
-          'sticky top-0 z-50 transition-colors duration-300',
-          isHome
-            ? 'border-b-0 bg-gradient-to-b from-black/[0.35] to-transparent'
-            : 'border-border bg-background border-b',
-        )}
+        className="sticky top-0 z-50 border-b border-[#00aeec]/20 bg-white"
+        style={{
+          backgroundImage: 'radial-gradient(circle, rgba(0,174,236,0.18) 1.5px, transparent 1.5px)',
+          backgroundSize: '22px 22px',
+        }}
       >
         <div className="flex h-16 items-center gap-x-6 px-4">
           <nav className="hidden shrink-0 items-center gap-x-5 lg:flex">
@@ -53,9 +57,7 @@ export function Header() {
                 href={href}
                 className={cn(
                   'flex items-center gap-1.5 text-[13px] font-light whitespace-nowrap transition-colors',
-                  isHome
-                    ? 'text-white hover:text-white'
-                    : 'text-muted-foreground hover:text-foreground',
+                  'text-muted-foreground hover:text-foreground',
                   !Icon &&
                     'transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0',
                 )}
@@ -73,7 +75,7 @@ export function Header() {
                 <input
                   type="search"
                   placeholder="Tìm kiếm điều gì đó của tôi"
-                  className="border-input bg-muted focus:ring-ring h-9 w-full rounded-full border pr-4 pl-9 text-sm focus:ring-2 focus:outline-none"
+                  className="border-input focus:ring-ring h-9 w-full rounded-full border bg-white/70 pr-4 pl-9 text-sm focus:ring-2 focus:outline-none"
                 />
               </div>
 
@@ -97,18 +99,13 @@ export function Header() {
               <Link
                 key={href}
                 href={href}
-                className={cn(
-                  'hover:bg-accent/20 flex flex-col items-center gap-y-2 rounded-md px-3 py-1 transition-colors',
-                  isHome
-                    ? 'text-white hover:text-white'
-                    : 'text-muted-foreground hover:text-accent-foreground',
-                )}
+                className="hover:bg-accent/20 text-muted-foreground hover:text-accent-foreground flex flex-col items-center gap-y-2 rounded-md px-3 py-1 transition-colors"
               >
                 <Icon className="h-5 w-5" />
                 <span className="text-[10px] leading-none font-medium">{label}</span>
               </Link>
             ))}
-            <CollectionDropdown isHome={isHome} />
+            <CollectionDropdown />
           </nav>
         </div>
       </header>
@@ -118,14 +115,7 @@ export function Header() {
   );
 }
 
-const COLLECTION_TABS = [
-  { id: 'default', label: 'Mặc định', count: 0 },
-  { id: 'watchlater', label: 'Xem sau', count: 0 },
-] as const;
-
-type CollectionTabId = (typeof COLLECTION_TABS)[number]['id'];
-
-function CollectionDropdown({ isHome }: { isHome: boolean }) {
+function CollectionDropdown() {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<CollectionTabId>('default');
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -146,14 +136,7 @@ function CollectionDropdown({ isHome }: { isHome: boolean }) {
 
   return (
     <div className="relative shrink-0" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
-      <button
-        className={cn(
-          'hover:bg-accent/20 flex flex-col items-center gap-y-2 rounded-md px-3 py-1 transition-colors',
-          isHome
-            ? 'text-white/80 hover:text-white'
-            : 'text-muted-foreground hover:text-accent-foreground',
-        )}
-      >
+      <button className="hover:bg-accent/20 text-muted-foreground hover:text-accent-foreground flex flex-col items-center gap-y-2 rounded-md px-3 py-1 transition-colors">
         <Bookmark className="h-5 w-5" />
         <span className="text-[10px] leading-none font-medium">Bộ sưu tập</span>
       </button>
@@ -318,7 +301,7 @@ function UserMenu({ user }: { user: User }) {
         </div>
       </div>
 
-      {/* Backdrop (both mobile drawer + desktop dropdown close) */}
+      {/* Backdrop */}
       <div
         className={cn(
           'fixed inset-0 z-40 bg-black/50',

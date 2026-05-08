@@ -8,9 +8,9 @@ export function HomeBanner() {
   if (pathname !== '/') return null;
 
   return (
-    <div className="relative z-10 -mt-16 h-[220px] w-full overflow-hidden bg-[#0d1b3e] sm:h-[260px] md:h-[320px]">
+    <div className="relative z-10 -mt-16 h-[100px] w-full overflow-hidden bg-[#0d1b3e] sm:h-[160px] md:h-[200px]">
       <Image src="/images/banner.jpg" alt="" fill className="object-cover object-center" priority />
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent" />
+      <div className="from-background absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t to-transparent" />
     </div>
   );
 }

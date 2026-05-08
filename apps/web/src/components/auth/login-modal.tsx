@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
+import { extractApiError } from '@/lib/api-error';
 import { useUserStore } from '@/stores/user-store';
 import type { AuthTokens, User } from 'shared-types';
 
@@ -26,20 +27,24 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Password tab
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+
+  // SMS tab
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [otpCooldown, setOtpCooldown] = useState(0);
 
   const setTokens = useUserStore((s) => s.setTokens);
   const setUser = useUserStore((s) => s.setUser);
+  const setJustLoggedIn = useUserStore((s) => s.setJustLoggedIn);
 
-  const fetchAndStoreUser = async () => {
-    const { data } = await apiClient.get<{ data: User }>('/auth/me');
-    setUser(data.data);
-  };
+  useEffect(() => {
+    if (devOtp && otpSent) setOtpCode(devOtp);
+  }, [devOtp, otpSent]);
 
   const resetError = () => setError('');
 
@@ -48,14 +53,16 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     setLoading(true);
     setError('');
     try {
-      const { data } = await apiClient.post<{ data: AuthTokens }>('/auth/login', { identifier, password });
-      setTokens(data.data);
-      await fetchAndStoreUser();
+      const res = await apiClient.post<AuthTokens>('/auth/login', { identifier, password });
+      setTokens(res.data);
+      const meRes = await apiClient.get<User>('/users/me', {
+        headers: { Authorization: `Bearer ${res.data.accessToken}` },
+      });
+      setUser(meRes.data);
+      setJustLoggedIn(true);
       onClose();
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { error?: { message?: string } } } })
-        ?.response?.data?.error?.message;
-      setError(msg ?? 'Đăng nhập thất bại');
+    } catch (err: unknown) {
+      setError(extractApiError(err, 'Đăng nhập thất bại'));
     } finally {
       setLoading(false);
     }
@@ -66,7 +73,10 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     setLoading(true);
     setError('');
     try {
-      await apiClient.post('/auth/otp/send', { phoneNumber });
+      const res = await apiClient.post<{ message: string; devOtp?: string }>('/auth/otp/send', { phoneNumber });
+      const devOtpCode = res.data.devOtp ?? null;
+      setDevOtp(devOtpCode);
+      if (devOtpCode) setOtpCode(devOtpCode);
       setOtpSent(true);
       setOtpCooldown(120);
       const timer = setInterval(() => {
@@ -75,10 +85,8 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           return v - 1;
         });
       }, 1000);
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { error?: { message?: string } } } })
-        ?.response?.data?.error?.message;
-      setError(msg ?? 'Gửi OTP thất bại');
+    } catch (err: unknown) {
+      setError(extractApiError(err, 'Gửi OTP thất bại'));
     } finally {
       setLoading(false);
     }
@@ -89,14 +97,16 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     setLoading(true);
     setError('');
     try {
-      const { data } = await apiClient.post<{ data: AuthTokens }>('/auth/otp/verify', { phoneNumber, code: otpCode });
-      setTokens(data.data);
-      await fetchAndStoreUser();
+      const res = await apiClient.post<AuthTokens>('/auth/otp/verify', { phoneNumber, code: otpCode });
+      setTokens(res.data);
+      const meRes = await apiClient.get<User>('/users/me', {
+        headers: { Authorization: `Bearer ${res.data.accessToken}` },
+      });
+      setUser(meRes.data);
+      setJustLoggedIn(true);
       onClose();
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { error?: { message?: string } } } })
-        ?.response?.data?.error?.message;
-      setError(msg ?? 'Mã OTP không hợp lệ');
+    } catch (err: unknown) {
+      setError(extractApiError(err, 'Mã OTP không hợp lệ'));
     } finally {
       setLoading(false);
     }
@@ -184,7 +194,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                 <input
                   type="text"
                   value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                   placeholder="Nhập mã OTP"
                   className="field flex-1"

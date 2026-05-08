@@ -1,14 +1,17 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Home, Compass, Upload, Bell, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/constants';
 
 const MOBILE_NAV_ITEMS = [
-  { label: 'Trang chủ', href: ROUTES.HOME, icon: Home },
-  { label: 'Khám phá', href: '/explore', icon: Compass },
-  { label: 'Đăng tải', href: ROUTES.UPLOAD, icon: Upload },
-  { label: 'Thông báo', href: '/notifications', icon: Bell },
-  { label: 'Tôi', href: '/profile', icon: User },
+  { label: 'Trang chủ', href: ROUTES.HOME, icon: Home, match: (p: string) => p === '/' },
+  { label: 'Khám phá', href: '/explore', icon: Compass, match: (p: string) => p.startsWith('/explore') },
+  { label: 'Đăng tải', href: ROUTES.UPLOAD, icon: Upload, match: (p: string) => p.startsWith('/upload') },
+  { label: 'Thông báo', href: '/notifications', icon: Bell, match: (p: string) => p.startsWith('/notifications') },
+  { label: 'Tôi', href: '/account/home', icon: User, match: (p: string) => p.startsWith('/account') },
 ] as const;
 
 interface MobileNavProps {
@@ -16,6 +19,8 @@ interface MobileNavProps {
 }
 
 export function MobileNav({ className }: MobileNavProps) {
+  const pathname = usePathname();
+
   return (
     <nav
       className={cn(
@@ -23,16 +28,22 @@ export function MobileNav({ className }: MobileNavProps) {
         className,
       )}
     >
-      {MOBILE_NAV_ITEMS.map(({ label, href, icon: Icon }) => (
-        <Link
-          key={href}
-          href={href}
-          className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <Icon className="h-5 w-5" />
-          <span className="text-[10px] font-medium">{label}</span>
-        </Link>
-      ))}
+      {MOBILE_NAV_ITEMS.map(({ label, href, icon: Icon, match }) => {
+        const active = match(pathname);
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={cn(
+              'flex flex-col items-center gap-0.5 px-3 py-1.5 transition-colors',
+              active ? 'text-[#00aeec]' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Icon className={cn('h-5 w-5', active && 'stroke-[2.5]')} />
+            <span className="text-[10px] font-medium">{label}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

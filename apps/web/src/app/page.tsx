@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SiteLayout } from '@/components/layout/site-layout';
 
 export const metadata: Metadata = { title: 'Trang chủ' };
 
@@ -20,40 +21,37 @@ function SkeletonCard() {
 
 export default function HomePage() {
   return (
-    <div className="space-y-6">
-      {/* Featured section: big banner left + 2 cards right (desktop) */}
-      <section>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))] lg:grid-rows-2">
-          {/* Featured / Banner — spans 2 rows on desktop */}
-          <div className="relative col-span-2 overflow-hidden rounded-xl sm:col-span-3 lg:col-span-1 lg:row-span-2">
-            <div className="aspect-video w-full animate-pulse bg-gradient-to-br from-muted via-muted to-accent/30 lg:h-full lg:aspect-auto" />
-            <div className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-gradient-to-t from-black/70 to-transparent p-3">
-              <p className="text-sm font-semibold text-white line-clamp-2">
-                Video nổi bật sẽ hiển thị ở đây
-              </p>
-              <p className="mt-0.5 text-xs text-white/70">Tên kênh · 1.2M lượt xem</p>
+    <SiteLayout>
+      <div className="space-y-6">
+        <section>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))] lg:grid-rows-2">
+            <div className="relative col-span-2 overflow-hidden rounded-xl sm:col-span-3 lg:col-span-1 lg:row-span-2">
+              <div className="aspect-video w-full animate-pulse bg-gradient-to-br from-muted via-muted to-accent/30 lg:h-full lg:aspect-auto" />
+              <div className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-gradient-to-t from-black/70 to-transparent p-3">
+                <p className="text-sm font-semibold text-white line-clamp-2">
+                  Video nổi bật sẽ hiển thị ở đây
+                </p>
+                <p className="mt-0.5 text-xs text-white/70">Tên kênh · 1.2M lượt xem</p>
+              </div>
             </div>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
           </div>
+        </section>
 
-          {/* 3×2 side cards */}
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
-      </section>
-
-      {/* Regular video grid */}
-      <section>
-        <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Video mới nhất</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </div>
-      </section>
-    </div>
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Video mới nhất</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        </section>
+      </div>
+    </SiteLayout>
   );
 }
