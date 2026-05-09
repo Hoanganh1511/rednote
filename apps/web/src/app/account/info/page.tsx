@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { Camera, ChevronRight, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores/user-store';
+import { useAccountUiStore } from '@/stores/account-ui-store';
 import { apiClient } from '@/lib/api-client';
 import { extractApiError } from '@/lib/api-error';
+import { Dialog } from '@/components/ui/dialog';
 import type { User } from 'shared-types';
 
 const GENDER_LABELS: Record<string, string> = {
@@ -20,18 +22,19 @@ export default function AccountInfoPage() {
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
 
+  const setMobileBackOverride = useAccountUiStore((s) => s.setMobileBackOverride);
+
   const [form, setForm] = useState({ displayName: '', bio: '', gender: '', birthday: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const [username, setUsername] = useState('');
   const [usernameEditing, setUsernameEditing] = useState(false);
   const [usernameSaving, setUsernameSaving] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
-  const [usernameSuccess, setUsernameSuccess] = useState(false);
 
   const [mobileEditing, setMobileEditing] = useState(false);
+  const [successDialog, setSuccessDialog] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -45,6 +48,15 @@ export default function AccountInfoPage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (mobileEditing) {
+      setMobileBackOverride(() => setMobileEditing(false));
+    } else {
+      setMobileBackOverride(null);
+    }
+    return () => setMobileBackOverride(null);
+  }, [mobileEditing, setMobileBackOverride]);
+
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -52,7 +64,6 @@ export default function AccountInfoPage() {
   const handleSave = async () => {
     setSaving(true);
     setError(null);
-    setSuccess(false);
     try {
       const body: Record<string, string> = {};
       if (form.displayName) body.displayName = form.displayName;
@@ -62,9 +73,8 @@ export default function AccountInfoPage() {
 
       const res = await apiClient.patch<User>('/users/me', body);
       setUser(res.data);
-      setSuccess(true);
       setMobileEditing(false);
-      setTimeout(() => setSuccess(false), 3000);
+      setSuccessDialog('Thay đổi đã được cập nhật.');
     } catch (err: unknown) {
       setError(extractApiError(err, 'Lưu thất bại, vui lòng thử lại.'));
     } finally {
@@ -76,13 +86,11 @@ export default function AccountInfoPage() {
     if (!username.trim() || username === user?.username) return;
     setUsernameSaving(true);
     setUsernameError(null);
-    setUsernameSuccess(false);
     try {
       const res = await apiClient.patch<User>('/users/me', { username: username.trim() });
       setUser(res.data);
       setUsernameEditing(false);
-      setUsernameSuccess(true);
-      setTimeout(() => setUsernameSuccess(false), 3000);
+      setSuccessDialog('Đã cập nhật tên người dùng!');
     } catch (err: unknown) {
       setUsernameError(extractApiError(err, 'Đổi tên người dùng thất bại.'));
     } finally {
@@ -191,7 +199,6 @@ export default function AccountInfoPage() {
                   )}
                 </div>
                 {usernameError && <p className="text-xs text-red-500">{usernameError}</p>}
-                {usernameSuccess && <p className="text-xs text-emerald-600">Đã cập nhật tên người dùng!</p>}
               </div>
             </div>
 
@@ -236,7 +243,6 @@ export default function AccountInfoPage() {
             </div>
 
             {error && <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>}
-            {success && <p className="rounded-xl bg-green-50 px-4 py-2.5 text-sm text-emerald-600">Đã lưu thay đổi!</p>}
 
             <button
               onClick={handleSave}
@@ -329,9 +335,6 @@ export default function AccountInfoPage() {
           {usernameError && (
             <p className="mt-3 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{usernameError}</p>
           )}
-          {usernameSuccess && (
-            <p className="mt-3 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-600">Đã cập nhật tên người dùng!</p>
-          )}
         </div>
 
         {/* Main info form */}
@@ -373,9 +376,6 @@ export default function AccountInfoPage() {
           {error && (
             <p className="mt-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</p>
           )}
-          {success && (
-            <p className="mt-4 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-600">Đã lưu thay đổi thành công!</p>
-          )}
 
           <div className="mt-8 flex justify-end">
             <button
@@ -388,6 +388,15 @@ export default function AccountInfoPage() {
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={successDialog !== null}
+        onClose={() => setSuccessDialog(null)}
+
+        actions={[{ label: 'OK', onClick: () => setSuccessDialog(null) }]}
+      >
+        {successDialog}
+      </Dialog>
     </div>
   );
 }

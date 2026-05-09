@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import { extractApiError } from '@/lib/api-error';
 import { useUserStore } from '@/stores/user-store';
+import { Dialog } from '@/components/ui/dialog';
 import type { User } from 'shared-types';
 
 type BreadcrumbItem =
@@ -63,7 +64,7 @@ export default function AccountAvatarPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadSuccessDialog, setUploadSuccessDialog] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const resetUpload = () => { setMode('view'); setFile(null); setPreview(null); setUploadError(null); };
@@ -102,8 +103,7 @@ export default function AccountAvatarPage() {
       // 3. Save publicUrl to user profile
       const meRes = await apiClient.patch<User>('/users/me', { avatarUrl: publicUrl });
       setUser(meRes.data);
-      setUploadSuccess(true);
-      setTimeout(() => setUploadSuccess(false), 3000);
+      setUploadSuccessDialog(true);
     } catch (err: unknown) {
       setUploadError(extractApiError(err, 'Tải ảnh thất bại, vui lòng thử lại.'));
     } finally {
@@ -168,9 +168,6 @@ export default function AccountAvatarPage() {
           {uploadError && (
             <p className="mt-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600 text-center">{uploadError}</p>
           )}
-          {uploadSuccess && (
-            <p className="mt-4 text-sm text-emerald-600 text-center font-medium">Cập nhật avatar thành công!</p>
-          )}
 
           <div className="mt-6 flex justify-center">
             <button
@@ -183,6 +180,15 @@ export default function AccountAvatarPage() {
             </button>
           </div>
         </div>
+
+        <Dialog
+          open={uploadSuccessDialog}
+          onClose={() => { setUploadSuccessDialog(false); resetUpload(); }}
+
+          actions={[{ label: 'OK', onClick: () => { setUploadSuccessDialog(false); resetUpload(); } }]}
+        >
+          Cập nhật ảnh đại diện thành công!
+        </Dialog>
       </div>
     );
   }

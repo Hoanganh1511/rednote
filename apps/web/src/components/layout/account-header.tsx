@@ -70,7 +70,13 @@ export function AccountHeader() {
 
           <div className="flex flex-1 items-center justify-center gap-3">
             <div className="flex w-full max-w-xl items-center gap-3">
-              <div className="relative flex-1">
+              {/* Mobile: logo thay search */}
+              <span className="flex-1 text-lg font-bold tracking-tight text-[#00aeec] md:hidden">
+                RedNote
+              </span>
+
+              {/* Desktop: search input */}
+              <div className="relative hidden flex-1 md:block">
                 <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <input
                   type="search"

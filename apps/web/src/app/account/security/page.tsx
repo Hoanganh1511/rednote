@@ -14,7 +14,7 @@ export default function AccountSecurityPage() {
 
   const hasPhone = !!user?.phoneNumber;
   const hasEmail = !!user?.email;
-  const hasPassword = user?.hasPassword ?? true;
+  const hasPassword = user?.hasPassword ?? false;
 
   return (
     <div className="max-w-2xl space-y-6">

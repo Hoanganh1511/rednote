@@ -7,11 +7,13 @@ import { AccountHeader } from '@/components/layout/account-header';
 import { AccountSidebar } from '@/components/layout/account-sidebar';
 import { MobileNav } from '@/components/layout/mobile-nav';
 import { useRequireAuth } from '@/hooks/use-auth';
+import { useAccountUiStore } from '@/stores/account-ui-store';
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   useRequireAuth();
   const pathname = usePathname();
   const isHome = pathname === '/account/home';
+  const backOverride = useAccountUiStore((s) => s.mobileBackOverride);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -28,13 +30,23 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
           {/* Mobile back button on sub-pages */}
           {!isHome && (
             <div className="mb-4 md:hidden">
-              <Link
-                href="/account/home"
-                className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Quay về
-              </Link>
+              {backOverride ? (
+                <button
+                  onClick={backOverride}
+                  className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Quay về
+                </button>
+              ) : (
+                <Link
+                  href="/account/home"
+                  className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Quay về
+                </Link>
+              )}
             </div>
           )}
 

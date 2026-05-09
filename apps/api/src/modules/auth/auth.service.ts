@@ -87,7 +87,7 @@ export class AuthService {
         phoneNumber: dto.phoneNumber,
         username: `user_${Date.now()}`,
         displayName: dto.phoneNumber,
-        passwordHash: '',
+        passwordHash: null,
       });
     }
 

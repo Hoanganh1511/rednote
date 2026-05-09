@@ -1,5 +1,5 @@
 import { Exclude } from 'class-transformer';
-import { Column, Entity, Index } from 'typeorm';
+import { AfterLoad, Column, Entity, Index } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 
 export type UserRole = 'user' | 'creator' | 'admin';
@@ -55,4 +55,11 @@ export class UserEntity extends BaseEntity {
   @Exclude()
   @Column({ name: 'refresh_token', nullable: true, type: 'text' })
   refreshToken: string | null;
+
+  hasPassword!: boolean;
+
+  @AfterLoad()
+  computeHasPassword() {
+    this.hasPassword = this.passwordHash !== null;
+  }
 }
