@@ -7,6 +7,8 @@ import { getQueryClient } from '@/lib/query-client';
 import { useUserStore } from '@/stores/user-store';
 import { apiClient } from '@/lib/api-client';
 import { LiveNotificationStack } from '@/components/ui/live-notification';
+import { Toaster } from 'sonner';
+import { NavigationLoaderProvider } from '@/components/navigation-loader';
 import type { User } from 'shared-types';
 
 function AuthRefresh() {
@@ -30,11 +32,14 @@ export function Providers({ children }: { children: ReactNode }) {
   const queryClient = getQueryClient();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthRefresh />
-      {children}
-      <LiveNotificationStack />
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <NavigationLoaderProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthRefresh />
+        {children}
+        <LiveNotificationStack />
+        <Toaster position="top-center" richColors closeButton />
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </NavigationLoaderProvider>
   );
 }

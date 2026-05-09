@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, MessageCircle, Bookmark, ChevronRight, LogOut, ScanEye, X } from 'lucide-react';
+import { MessageCircle, Bookmark, ChevronRight, LogOut, ScanEye, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { LoginModal } from '@/components/auth/login-modal';
+import { SearchDropdown } from '@/components/search-dropdown';
 import { useUserStore } from '@/stores/user-store';
 import { apiClient } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,7 +40,7 @@ export function Header() {
     <>
       <header
         className={cn(
-          'sticky top-0 z-50 transition-colors duration-300',
+          'sticky top-0 z-header transition-colors duration-300',
           isHome
             ? 'border-b-0 bg-gradient-to-b from-black/[0.35] to-transparent'
             : 'border-border bg-background border-b',
@@ -68,14 +69,7 @@ export function Header() {
 
           <div className="flex flex-1 items-center justify-center gap-3">
             <div className="flex w-full max-w-xl items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                <input
-                  type="search"
-                  placeholder="Tìm kiếm điều gì đó của tôi"
-                  className="border-input bg-muted focus:ring-ring h-9 w-full rounded-full border pr-4 pl-9 text-sm focus:ring-2 focus:outline-none"
-                />
-              </div>
+              <SearchDropdown />
 
               {!mounted ? (
                 <Skeleton variant="circle" className="h-8 w-8 shrink-0" />
@@ -160,7 +154,7 @@ function CollectionDropdown({ isHome }: { isHome: boolean }) {
 
       <div
         className={cn(
-          'absolute top-full mt-2 right-0 z-50',
+          'absolute top-full mt-2 right-0 z-dropdown',
           'border-border bg-background w-[480px] overflow-hidden rounded-2xl border shadow-xl',
           'origin-top-right transition-all duration-200',
           open
@@ -245,12 +239,12 @@ function UserMenu({ user }: { user: User }) {
           />
         )}
 
-        <div className="h-8 w-8">
+        <div className="h-10 w-10">
           <div
             className={cn(
-              'h-full w-full overflow-hidden rounded-full bg-[#00aeec] text-xs font-semibold text-white',
+              'h-full w-full overflow-hidden rounded-full bg-[#00aeec] text-sm font-semibold text-white',
               'flex items-center justify-center',
-              'relative z-20 transition-transform duration-300 ease-out',
+              'relative z-avatar-float transition-transform duration-300 ease-out',
               open ? 'md:translate-y-10 md:scale-[2.0]' : 'translate-y-0 scale-100',
             )}
           >
@@ -265,7 +259,7 @@ function UserMenu({ user }: { user: User }) {
         {/* Desktop dropdown only */}
         <div
           className={cn(
-            'absolute top-14 left-1/2 z-10 w-72 -translate-x-1/2',
+            'absolute top-14 left-1/2 z-dropdown w-72 -translate-x-1/2',
             'hidden md:block',
             'border-border bg-background overflow-hidden rounded-2xl border shadow-xl',
             'origin-top transition-all duration-300',
@@ -321,7 +315,7 @@ function UserMenu({ user }: { user: User }) {
       {/* Backdrop (both mobile drawer + desktop dropdown close) */}
       <div
         className={cn(
-          'fixed inset-0 z-40 bg-black/50',
+          'fixed inset-0 z-backdrop bg-black/50',
           'transition-opacity duration-300',
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
           'md:bg-transparent',
@@ -332,7 +326,7 @@ function UserMenu({ user }: { user: User }) {
       {/* Mobile right drawer */}
       <div
         className={cn(
-          'fixed top-0 right-0 bottom-0 z-50 w-72 md:hidden',
+          'fixed top-0 right-0 bottom-0 z-dropdown w-72 md:hidden',
           'bg-background shadow-2xl flex flex-col',
           'transition-transform duration-300 ease-out',
           open ? 'translate-x-0' : 'translate-x-full',
@@ -406,7 +400,7 @@ function LoginGreetBubble({ name, onDismiss }: { name: string; onDismiss: () => 
   }, [onDismiss]);
 
   return (
-    <div className="animate-in fade-in slide-in-from-top-2 absolute top-full right-0 z-30 mt-2 duration-300">
+    <div className="animate-in fade-in slide-in-from-top-2 absolute top-full right-0 z-sticky-sub mt-2 duration-300">
       <div className="relative flex items-center gap-2 rounded-2xl bg-[#ff6b81] px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-lg">
         <span>Chào {name}! 🎉</span>
         <button

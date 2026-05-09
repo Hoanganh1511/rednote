@@ -42,6 +42,7 @@
     "pg": "^8.13.1",
     "redis": "^4.7.0",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.12.3",
     "rxjs": "^7.8.1",
     "shared-types": "workspace:*",
     "socket.io": "^4.8.1",

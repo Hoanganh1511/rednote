@@ -76,4 +76,28 @@ export class UsersService {
   async updateRefreshToken(id: string, refreshToken: string | null): Promise<void> {
     await this.userRepo.update(id, { refreshToken });
   }
+
+  async saveEmail(id: string, email: string): Promise<void> {
+    await this.userRepo.update(id, { email });
+  }
+
+  async savePhone(id: string, phoneNumber: string): Promise<void> {
+    await this.userRepo.update(id, { phoneNumber });
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    await this.userRepo.update(id, { passwordHash });
+  }
+
+  async findByPasswordResetToken(token: string): Promise<UserEntity | null> {
+    return this.userRepo.findOne({ where: { passwordResetToken: token } });
+  }
+
+  async setPasswordResetToken(id: string, token: string, expiresAt: Date): Promise<void> {
+    await this.userRepo.update(id, { passwordResetToken: token, passwordResetExpiresAt: expiresAt });
+  }
+
+  async clearPasswordResetToken(id: string): Promise<void> {
+    await this.userRepo.update(id, { passwordResetToken: null, passwordResetExpiresAt: null });
+  }
 }

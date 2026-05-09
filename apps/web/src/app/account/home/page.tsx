@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import {
-  Crown, Coins, Star, LogIn, PlayCircle, ThumbsUp, Share2, Trophy,
-  History, Heart, Clock, Settings, ChevronRight, Upload,
+  Crown, Coins, LogIn, PlayCircle, ThumbsUp, Share2, Trophy,
+  ChevronRight, Upload,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/hooks/use-auth';
@@ -16,12 +16,6 @@ const DAILY_TASKS = [
   { label: 'Chia sẻ video hàng ngày', icon: Share2, exp: 5 },
 ] as const;
 
-const QUICK_ACTIONS = [
-  { label: 'Lịch sử xem', icon: History, href: '/account/watch-history' },
-  { label: 'Yêu thích', icon: Heart, href: '/account/favorites' },
-  { label: 'Xem sau', icon: Clock, href: '/account/watch-later' },
-  { label: 'Cài đặt', icon: Settings, href: '/account/security' },
-] as const;
 
 export default function AccountHomePage() {
   const user = useCurrentUser();
@@ -54,10 +48,6 @@ export default function AccountHomePage() {
                 <span className="flex items-center gap-1">
                   <Coins className="h-3 w-3 text-yellow-500" />
                   Xu: <strong className="text-foreground">0</strong>
-                </span>
-                <span className="flex items-center gap-1">
-                  <Star className="h-3 w-3 text-[#00aeec]" />
-                  Xu B: <strong className="text-foreground">0</strong>
                 </span>
               </div>
             </div>
@@ -98,28 +88,15 @@ export default function AccountHomePage() {
             <p className="text-sm font-semibold">Nâng cấp hội viên</p>
             <p className="text-xs opacity-75">Khám phá đặc quyền hội viên</p>
           </div>
-          <button className="shrink-0 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-[#00aeec] transition-opacity hover:opacity-90">
-            Đăng ký ngay
-          </button>
-        </div>
-
-        {/* Quick actions */}
-        <div className="rounded-2xl border border-border bg-background px-2 py-4 shadow-sm">
-          <div className="grid grid-cols-4">
-            {QUICK_ACTIONS.map(({ label, icon: Icon, href }) => (
-              <Link
-                key={href}
-                href={href}
-                className="flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition-colors hover:bg-accent"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#00aeec]/10 text-[#00aeec]">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <span className="text-center text-[10px] leading-tight text-muted-foreground">{label}</span>
-              </Link>
-            ))}
+          <div className="relative shrink-0">
+            <button className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-[#00aeec] transition-opacity hover:opacity-90">
+              Đăng ký ngay
+            </button>
+            <span className="ring-background absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2" />
           </div>
         </div>
+
+
 
         {/* Upload prompt */}
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-4 shadow-sm">
@@ -130,12 +107,15 @@ export default function AccountHomePage() {
             <p className="text-sm font-semibold">Đăng video đầu tiên!</p>
             <p className="text-xs text-muted-foreground">Chia sẻ nội dung với cộng đồng</p>
           </div>
-          <Link
-            href="/upload"
-            className="shrink-0 rounded-full bg-[#00aeec] px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            Đăng tải
-          </Link>
+          <div className="relative shrink-0">
+            <Link
+              href="/upload"
+              className="rounded-full bg-[#00aeec] px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Đăng tải
+            </Link>
+            <span className="ring-background absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2" />
+          </div>
         </div>
 
       </div>
@@ -172,10 +152,6 @@ export default function AccountHomePage() {
                 <Coins className="h-4 w-4 text-yellow-500" />
                 Xu: <strong className="text-foreground">0</strong>
               </span>
-              <span className="flex items-center gap-1.5">
-                <Star className="h-4 w-4 text-[#00aeec]" />
-                Xu B: <strong className="text-foreground">0</strong>
-              </span>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -193,9 +169,12 @@ export default function AccountHomePage() {
           <div className="relative flex flex-1 flex-col justify-center gap-2 bg-gradient-to-r from-[#00aeec] to-[#009fd4] p-5 sm:p-6">
             <p className="text-sm font-medium opacity-80">Nâng cấp hội viên</p>
             <p className="text-base font-semibold">Trở thành hội viên chính thức, mở ra thế giới mới (｀･ω･´)</p>
-            <button className="mt-2 w-fit rounded-lg bg-white px-5 py-2 text-sm font-semibold text-[#00aeec] transition-opacity hover:opacity-90">
-              Nâng cấp ngay
-            </button>
+            <div className="relative mt-2 w-fit">
+              <button className="rounded-lg bg-white px-5 py-2 text-sm font-semibold text-[#00aeec] transition-opacity hover:opacity-90">
+                Nâng cấp ngay
+              </button>
+              <span className="ring-background absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2" />
+            </div>
             <Crown className="absolute right-4 top-1/2 h-20 w-20 -translate-y-1/2 opacity-10" />
           </div>
           <div className="h-px w-full bg-white/20 md:h-auto md:w-px md:self-stretch" />

@@ -26,7 +26,7 @@ const THEMES = {
 export function LiveNotificationStack() {
   const notifications = useNotificationStore((s) => s.notifications);
   return (
-    <div className="fixed bottom-5 left-5 z-[9999] flex flex-col-reverse gap-2.5 pointer-events-none">
+    <div className="fixed bottom-5 left-5 z-toast flex flex-col-reverse gap-2.5 pointer-events-none">
       {notifications.map((n) => (
         <LiveNotificationItem key={n.id} notification={n} />
       ))}

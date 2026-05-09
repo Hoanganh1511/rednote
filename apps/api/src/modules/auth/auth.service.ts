@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -7,9 +8,11 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import type { Redis } from 'ioredis';
 import { UsersService } from '../users/users.service';
 import { SmsService } from './sms.service';
+import { MailerService } from '../mailer/mailer.service';
 import type { RegisterDto } from './dto/register.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { SendOtpDto } from './dto/send-otp.dto';
@@ -17,6 +20,9 @@ import type { VerifyOtpDto } from './dto/verify-otp.dto';
 import type { AuthTokens } from 'shared-types';
 
 const OTP_TTL_SECONDS = 120;
+const PHONE_OTP_TTL_SECONDS = 120;
+const EMAIL_OTP_TTL_SECONDS = 600;
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 @Injectable()
 export class AuthService {
@@ -25,6 +31,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly smsService: SmsService,
+    private readonly mailerService: MailerService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {}
 
@@ -92,6 +99,108 @@ export class AuthService {
     }
 
     return this.issueTokens(user.id, user.email ?? user.id);
+  }
+
+  async sendEmailBindOtp(userId: string, email: string): Promise<{ devOtp?: string }> {
+    const existing = await this.usersService.findByEmail(email);
+    if (existing && existing.id !== userId) {
+      throw new ConflictException('Email đã được sử dụng bởi tài khoản khác');
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    await this.redis.set(
+      `email-otp:${userId}`,
+      JSON.stringify({ code, email }),
+      'EX',
+      EMAIL_OTP_TTL_SECONDS,
+    );
+    await this.mailerService.sendEmailBindOtp(email, code);
+
+    if (this.config.get('NODE_ENV') !== 'production') {
+      return { devOtp: code };
+    }
+    return {};
+  }
+
+  async verifyEmailBindOtp(userId: string, email: string, code: string): Promise<void> {
+    const raw = await this.redis.get(`email-otp:${userId}`);
+    if (!raw) throw new BadRequestException('Mã OTP đã hết hạn, vui lòng gửi lại');
+
+    const stored = JSON.parse(raw) as { code: string; email: string };
+    if (stored.code !== code || stored.email !== email) {
+      throw new BadRequestException('Mã OTP không hợp lệ');
+    }
+
+    const existing = await this.usersService.findByEmail(email);
+    if (existing && existing.id !== userId) {
+      throw new ConflictException('Email đã được sử dụng bởi tài khoản khác');
+    }
+
+    await this.redis.del(`email-otp:${userId}`);
+    await this.usersService.saveEmail(userId, email);
+  }
+
+  async sendPhoneBindOtp(userId: string, phoneNumber: string): Promise<{ devOtp?: string }> {
+    const existing = await this.usersService.findByPhone(phoneNumber);
+    if (existing && existing.id !== userId) {
+      throw new ConflictException('Số điện thoại đã được sử dụng bởi tài khoản khác');
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    await this.redis.set(
+      `phone-otp:${userId}`,
+      JSON.stringify({ code, phoneNumber }),
+      'EX',
+      PHONE_OTP_TTL_SECONDS,
+    );
+    await this.smsService.sendOtp(phoneNumber, code);
+
+    if (this.config.get('NODE_ENV') !== 'production') {
+      return { devOtp: code };
+    }
+    return {};
+  }
+
+  async verifyPhoneBindOtp(userId: string, phoneNumber: string, code: string): Promise<void> {
+    const raw = await this.redis.get(`phone-otp:${userId}`);
+    if (!raw) throw new BadRequestException('Mã OTP đã hết hạn, vui lòng gửi lại');
+
+    const stored = JSON.parse(raw) as { code: string; phoneNumber: string };
+    if (stored.code !== code || stored.phoneNumber !== phoneNumber) {
+      throw new BadRequestException('Mã OTP không hợp lệ');
+    }
+
+    const existing = await this.usersService.findByPhone(phoneNumber);
+    if (existing && existing.id !== userId) {
+      throw new ConflictException('Số điện thoại đã được sử dụng bởi tài khoản khác');
+    }
+
+    await this.redis.del(`phone-otp:${userId}`);
+    await this.usersService.savePhone(userId, phoneNumber);
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) return; // silent — không lộ thông tin email tồn tại hay không
+
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
+    await this.usersService.setPasswordResetToken(user.id, token, expiresAt);
+
+    const frontendUrl = this.config.getOrThrow('FRONTEND_URL');
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    await this.mailerService.sendPasswordReset(email, resetUrl);
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const user = await this.usersService.findByPasswordResetToken(token);
+    if (!user || !user.passwordResetExpiresAt || user.passwordResetExpiresAt < new Date()) {
+      throw new BadRequestException('Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.usersService.updatePassword(user.id, passwordHash);
+    await this.usersService.clearPasswordResetToken(user.id);
   }
 
   async refreshTokens(userId: string, refreshToken: string): Promise<AuthTokens> {

@@ -55,7 +55,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
         </main>
       </div>
 
-      <MobileNav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" />
+      <MobileNav className="fixed bottom-0 left-0 right-0 z-header md:hidden" />
     </div>
   );
 }

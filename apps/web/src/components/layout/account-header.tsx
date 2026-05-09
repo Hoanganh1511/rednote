@@ -43,7 +43,7 @@ export function AccountHeader() {
   return (
     <>
       <header
-        className="sticky top-0 z-50 border-b border-[#00aeec]/20 bg-white"
+        className="sticky top-0 z-header border-b border-[#00aeec]/20 bg-white"
         style={{
           backgroundImage: 'radial-gradient(circle, rgba(0,174,236,0.18) 1.5px, transparent 1.5px)',
           backgroundSize: '22px 22px',
@@ -149,7 +149,7 @@ function CollectionDropdown() {
 
       <div
         className={cn(
-          'absolute top-full mt-2 right-0 z-50',
+          'absolute top-full mt-2 right-0 z-dropdown',
           'border-border bg-background w-[480px] overflow-hidden rounded-2xl border shadow-xl',
           'origin-top-right transition-all duration-200',
           open
@@ -239,7 +239,7 @@ function UserMenu({ user }: { user: User }) {
             className={cn(
               'h-full w-full overflow-hidden rounded-full bg-[#00aeec] text-xs font-semibold text-white',
               'flex items-center justify-center',
-              'relative z-20 transition-transform duration-300 ease-out',
+              'relative z-avatar-float transition-transform duration-300 ease-out',
               open ? 'md:translate-y-10 md:scale-[2.0]' : 'translate-y-0 scale-100',
             )}
           >
@@ -254,7 +254,7 @@ function UserMenu({ user }: { user: User }) {
         {/* Desktop dropdown only */}
         <div
           className={cn(
-            'absolute top-14 left-1/2 z-10 w-72 -translate-x-1/2',
+            'absolute top-14 left-1/2 z-dropdown w-72 -translate-x-1/2',
             'hidden md:block',
             'border-border bg-background overflow-hidden rounded-2xl border shadow-xl',
             'origin-top transition-all duration-300',
@@ -310,7 +310,7 @@ function UserMenu({ user }: { user: User }) {
       {/* Backdrop */}
       <div
         className={cn(
-          'fixed inset-0 z-40 bg-black/50',
+          'fixed inset-0 z-backdrop bg-black/50',
           'transition-opacity duration-300',
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
           'md:bg-transparent',
@@ -321,7 +321,7 @@ function UserMenu({ user }: { user: User }) {
       {/* Mobile right drawer */}
       <div
         className={cn(
-          'fixed top-0 right-0 bottom-0 z-50 w-72 md:hidden',
+          'fixed top-0 right-0 bottom-0 z-dropdown w-72 md:hidden',
           'bg-background shadow-2xl flex flex-col',
           'transition-transform duration-300 ease-out',
           open ? 'translate-x-0' : 'translate-x-full',
@@ -395,7 +395,7 @@ function LoginGreetBubble({ name, onDismiss }: { name: string; onDismiss: () => 
   }, [onDismiss]);
 
   return (
-    <div className="animate-in fade-in slide-in-from-top-2 absolute top-full right-0 z-30 mt-2 duration-300">
+    <div className="animate-in fade-in slide-in-from-top-2 absolute top-full right-0 z-sticky-sub mt-2 duration-300">
       <div className="relative flex items-center gap-2 rounded-2xl bg-[#ff6b81] px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-lg">
         <span>Chào {name}! 🎉</span>
         <button

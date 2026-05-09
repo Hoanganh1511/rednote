@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ open, onClose }: LoginModalProps) {
+  const router = useRouter();
   const [tab, setTab] = useState<TabId>('password');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -170,7 +172,11 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               </div>
             </FormRow>
             <div className="flex justify-end">
-              <button type="button" className="text-xs text-[#00aeec] transition-opacity hover:opacity-75">
+              <button
+                type="button"
+                onClick={() => { onClose(); router.push('/forgot-password'); }}
+                className="text-xs text-[#00aeec] transition-opacity hover:opacity-75"
+              >
                 Quên mật khẩu?
               </button>
             </div>

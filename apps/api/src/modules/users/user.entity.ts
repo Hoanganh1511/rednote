@@ -56,6 +56,13 @@ export class UserEntity extends BaseEntity {
   @Column({ name: 'refresh_token', nullable: true, type: 'text' })
   refreshToken: string | null;
 
+  @Exclude()
+  @Column({ name: 'password_reset_token', type: 'varchar', nullable: true, default: null })
+  passwordResetToken: string | null;
+
+  @Column({ name: 'password_reset_expires_at', type: 'timestamptz', nullable: true, default: null })
+  passwordResetExpiresAt: Date | null;
+
   hasPassword!: boolean;
 
   @AfterLoad()

@@ -8,12 +8,14 @@ import { AuthService } from './auth.service';
 import { SmsService } from './sms.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { MailerModule } from '../mailer/mailer.module';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
     JwtModule.register({}),
+    MailerModule,
   ],
   controllers: [AuthController],
   providers: [

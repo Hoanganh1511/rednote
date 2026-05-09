@@ -9,6 +9,16 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      zIndex: {
+        above: '10',          // floating trong local stacking context
+        'sticky-sub': '30',   // sticky phụ bên dưới header (category tabs, greet bubble)
+        header: '40',         // header chính, mobile bottom nav
+        backdrop: '50',       // overlay/backdrop
+        dropdown: '60',       // dropdowns, drawers
+        'avatar-float': '70', // avatar nổi trên dropdown panel
+        modal: '80',          // modal dialog
+        toast: '90',          // toast notifications
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',

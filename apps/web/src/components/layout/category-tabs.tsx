@@ -26,7 +26,7 @@ export function CategoryTabs() {
   const [category, setCategory] = useState<CategoryId | null>(null);
 
   return (
-    <div className="sticky top-16 z-40 border-b border-border bg-background">
+    <div className="sticky top-16 z-sticky-sub border-b border-border bg-background">
       {/* Category chips - horizontal scroll */}
       <div className="relative">
         <div className="scrollbar-hide mx-auto flex w-full max-w-screen-xl items-center gap-3 overflow-x-auto px-4 py-4">
