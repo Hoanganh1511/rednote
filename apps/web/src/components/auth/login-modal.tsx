@@ -48,6 +48,16 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     if (devOtp && otpSent) setOtpCode(devOtp);
   }, [devOtp, otpSent]);
 
+  // Reset form state when modal closes
+  useEffect(() => {
+    if (!open) {
+      setLoading(false);
+      setError('');
+      setOtpCode('');
+      setOtpSent(false);
+    }
+  }, [open]);
+
   const resetError = () => setError('');
 
   const handlePasswordLogin = async () => {
@@ -57,15 +67,18 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     try {
       const res = await apiClient.post<AuthTokens>('/auth/login', { identifier, password });
       setTokens(res.data);
-      const meRes = await apiClient.get<User>('/users/me', {
-        headers: { Authorization: `Bearer ${res.data.accessToken}` },
-      });
-      setUser(meRes.data);
+      // Fetch user data in background, don't wait
+      apiClient
+        .get<User>('/users/me', {
+          headers: { Authorization: `Bearer ${res.data.accessToken}` },
+        })
+        .then((meRes) => setUser(meRes.data))
+        .catch(() => {});
       setJustLoggedIn(true);
+      setLoading(false);
       onClose();
     } catch (err: unknown) {
       setError(extractApiError(err, 'Đăng nhập thất bại'));
-    } finally {
       setLoading(false);
     }
   };
@@ -75,7 +88,9 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     setLoading(true);
     setError('');
     try {
-      const res = await apiClient.post<{ message: string; devOtp?: string }>('/auth/otp/send', { phoneNumber });
+      const res = await apiClient.post<{ message: string; devOtp?: string }>('/auth/otp/send', {
+        phoneNumber,
+      });
       const devOtpCode = res.data.devOtp ?? null;
       setDevOtp(devOtpCode);
       if (devOtpCode) setOtpCode(devOtpCode);
@@ -83,7 +98,10 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
       setOtpCooldown(120);
       const timer = setInterval(() => {
         setOtpCooldown((v) => {
-          if (v <= 1) { clearInterval(timer); return 0; }
+          if (v <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
           return v - 1;
         });
       }, 1000);
@@ -99,17 +117,23 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     setLoading(true);
     setError('');
     try {
-      const res = await apiClient.post<AuthTokens>('/auth/otp/verify', { phoneNumber, code: otpCode });
-      setTokens(res.data);
-      const meRes = await apiClient.get<User>('/users/me', {
-        headers: { Authorization: `Bearer ${res.data.accessToken}` },
+      const res = await apiClient.post<AuthTokens>('/auth/otp/verify', {
+        phoneNumber,
+        code: otpCode,
       });
-      setUser(meRes.data);
+      setTokens(res.data);
+      // Fetch user data in background, don't wait
+      apiClient
+        .get<User>('/users/me', {
+          headers: { Authorization: `Bearer ${res.data.accessToken}` },
+        })
+        .then((meRes) => setUser(meRes.data))
+        .catch(() => {});
       setJustLoggedIn(true);
+      setLoading(false);
       onClose();
     } catch (err: unknown) {
       setError(extractApiError(err, 'Mã OTP không hợp lệ'));
-    } finally {
       setLoading(false);
     }
   };
@@ -121,13 +145,16 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
   return (
     <Modal open={open} onClose={onClose}>
-      <div className="px-5 pb-8 pt-7 sm:px-7">
+      <div className="px-5 pt-7 pb-8 sm:px-7">
         {/* Tabs */}
-        <div className="mb-6 flex items-center gap-5 border-b border-border">
+        <div className="border-border mb-6 flex items-center gap-5 border-b">
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => { setTab(t.id); resetError(); }}
+              onClick={() => {
+                setTab(t.id);
+                resetError();
+              }}
               className={cn(
                 'pb-3 text-sm font-medium whitespace-nowrap transition-colors',
                 tab === t.id
@@ -165,7 +192,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -174,7 +201,10 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => { onClose(); router.push('/forgot-password'); }}
+                onClick={() => {
+                  onClose();
+                  router.push('/forgot-password');
+                }}
                 className="text-xs text-[#00aeec] transition-opacity hover:opacity-75"
               >
                 Quên mật khẩu?
@@ -210,7 +240,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                   type="button"
                   onClick={handleSendOtp}
                   disabled={loading || otpCooldown > 0}
-                  className="shrink-0 rounded-lg border border-[#00aeec] px-3 py-2 text-xs text-[#00aeec] transition-colors hover:bg-[#00aeec]/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="shrink-0 rounded-lg border border-[#00aeec] px-3 py-2 text-xs text-[#00aeec] transition-colors hover:bg-[#00aeec]/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {otpCooldown > 0 ? `${otpCooldown}s` : 'Lấy mã'}
                 </button>
@@ -229,8 +259,11 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
         <div className="mt-6 flex gap-3">
           <button
             type="button"
-            onClick={() => { setTab('sms'); resetError(); }}
-            className="flex-1 rounded-lg border border-input py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+            onClick={() => {
+              setTab('sms');
+              resetError();
+            }}
+            className="border-input hover:bg-accent flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors"
           >
             Đăng ký
           </button>
@@ -246,23 +279,39 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
         {/* Divider */}
         <div className="my-5 flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs text-muted-foreground">Các cách khác để đăng nhập</span>
-          <div className="h-px flex-1 bg-border" />
+          <div className="bg-border h-px flex-1" />
+          <span className="text-muted-foreground text-xs">Các cách khác để đăng nhập</span>
+          <div className="bg-border h-px flex-1" />
         </div>
 
         {/* Social login */}
         <div className="flex justify-center gap-4 sm:gap-6">
-          <SocialButton label="Google"><div className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white shadow-sm"><GoogleIcon /></div></SocialButton>
-          <SocialButton label="Facebook"><div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1877f2]"><FacebookIcon /></div></SocialButton>
-          <SocialButton label="Apple ID"><div className="flex h-11 w-11 items-center justify-center rounded-full bg-black"><AppleIcon /></div></SocialButton>
+          <SocialButton label="Google">
+            <div className="border-border flex h-11 w-11 items-center justify-center rounded-full border bg-white shadow-sm">
+              <GoogleIcon />
+            </div>
+          </SocialButton>
+          <SocialButton label="Facebook">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1877f2]">
+              <FacebookIcon />
+            </div>
+          </SocialButton>
+          <SocialButton label="Apple ID">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black">
+              <AppleIcon />
+            </div>
+          </SocialButton>
         </div>
 
-        <p className="mt-5 text-center text-[11px] leading-relaxed text-muted-foreground">
-          Nếu bạn chưa đăng ký số điện thoại di động, chúng tôi sẽ tự động giúp bạn đăng ký tài khoản. Đăng nhập hoặc hoàn tất đăng ký để đồng ý{' '}
-          <span className="cursor-pointer text-[#00aeec] hover:opacity-80">Thỏa thuận người dùng</span>{' '}
+        <p className="text-muted-foreground mt-5 text-center text-[11px] leading-relaxed">
+          Nếu bạn chưa đăng ký số điện thoại di động, chúng tôi sẽ tự động giúp bạn đăng ký tài
+          khoản. Đăng nhập hoặc hoàn tất đăng ký để đồng ý{' '}
+          <span className="cursor-pointer text-[#00aeec] hover:opacity-80">
+            Thỏa thuận người dùng
+          </span>{' '}
           và{' '}
-          <span className="cursor-pointer text-[#00aeec] hover:opacity-80">Chính sách bảo mật</span>.
+          <span className="cursor-pointer text-[#00aeec] hover:opacity-80">Chính sách bảo mật</span>
+          .
         </p>
       </div>
     </Modal>
@@ -272,7 +321,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-      <label className="text-sm text-muted-foreground sm:w-28 sm:shrink-0">{label}</label>
+      <label className="text-muted-foreground text-sm sm:w-28 sm:shrink-0">{label}</label>
       {children}
     </div>
   );
@@ -280,9 +329,9 @@ function FormRow({ label, children }: { label: string; children: React.ReactNode
 
 function SocialButton({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <button className="flex flex-col items-center gap-1.5 rounded-xl px-3 py-2 transition-colors hover:bg-accent">
+    <button className="hover:bg-accent flex flex-col items-center gap-1.5 rounded-xl px-3 py-2 transition-colors">
       {children}
-      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground text-[11px]">{label}</span>
     </button>
   );
 }
@@ -290,10 +339,22 @@ function SocialButton({ label, children }: { label: string; children: React.Reac
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5">
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+      />
     </svg>
   );
 }
