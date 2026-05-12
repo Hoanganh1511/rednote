@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
 import { Clapperboard, FileText, NotebookPen, X } from 'lucide-react';
 import { ComingSoonBadge } from '@/components/ui/coming-soon-badge';
+import { useUserStore } from '@/stores/user-store';
 
 const CREATE_OPTIONS: {
   key: string;
@@ -14,6 +15,7 @@ const CREATE_OPTIONS: {
   icon: typeof Clapperboard;
   cardClassName: string;
   upcoming?: boolean;
+  requiresAuth?: boolean;
 }[] = [
   {
     key: 'video',
@@ -23,6 +25,7 @@ const CREATE_OPTIONS: {
     icon: Clapperboard,
     cardClassName: 'bg-[#A8E7FA]',
     upcoming: true,
+    requiresAuth: true,
   },
   {
     key: 'post',
@@ -31,6 +34,7 @@ const CREATE_OPTIONS: {
     href: '/upload/post',
     icon: FileText,
     cardClassName: 'bg-[#F3E08F]',
+    requiresAuth: true,
   },
   {
     key: 'article',
@@ -40,15 +44,18 @@ const CREATE_OPTIONS: {
     icon: NotebookPen,
     cardClassName: 'bg-[#CDEA95]',
     upcoming: true,
+    requiresAuth: true,
   },
 ];
 
 interface MobileCreateMenuProps {
   open: boolean;
   onClose: () => void;
+  onLoginRequired?: () => void;
 }
 
-export function MobileCreateMenu({ open, onClose }: MobileCreateMenuProps) {
+export function MobileCreateMenu({ open, onClose, onLoginRequired }: MobileCreateMenuProps) {
+  const isLoggedIn = useUserStore((s) => !!s.accessToken);
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -88,7 +95,7 @@ export function MobileCreateMenu({ open, onClose }: MobileCreateMenuProps) {
 
               <ul className="space-y-2.5">
                 {CREATE_OPTIONS.map(
-                  ({ key, label, description, href, icon: Icon, cardClassName, upcoming }) => (
+                  ({ key, label, description, href, icon: Icon, cardClassName, upcoming, requiresAuth }) => (
                     <li key={key}>
                       {upcoming ? (
                         <button
@@ -113,7 +120,14 @@ export function MobileCreateMenu({ open, onClose }: MobileCreateMenuProps) {
                       ) : (
                         <Link
                           href={href}
-                          onClick={onClose}
+                          onClick={(e) => {
+                            if (requiresAuth && !isLoggedIn) {
+                              e.preventDefault();
+                              onLoginRequired?.();
+                              return;
+                            }
+                            onClose();
+                          }}
                           className={`flex items-center justify-between rounded-2xl px-4 py-3 text-slate-900 transition-transform active:scale-[0.995] ${cardClassName}`}
                         >
                           <span className="min-w-0 flex-1">

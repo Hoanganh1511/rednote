@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Camera, ChevronRight, Pencil } from 'lucide-react';
+import { Camera, Pencil } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores/user-store';
 import { useAccountUiStore } from '@/stores/account-ui-store';
 import { apiClient } from '@/lib/api-client';
 import { extractApiError } from '@/lib/api-error';
-import { Dialog } from '@/components/ui/dialog';
 import type { User } from 'shared-types';
 
 const GENDER_LABELS: Record<string, string> = {
@@ -34,7 +34,6 @@ export default function AccountInfoPage() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
 
   const [mobileEditing, setMobileEditing] = useState(false);
-  const [successDialog, setSuccessDialog] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -74,7 +73,7 @@ export default function AccountInfoPage() {
       const res = await apiClient.patch<User>('/users/me', body);
       setUser(res.data);
       setMobileEditing(false);
-      setSuccessDialog('Thay đổi đã được cập nhật.');
+      toast.success('Thay đổi đã được cập nhật.');
     } catch (err: unknown) {
       setError(extractApiError(err, 'Lưu thất bại, vui lòng thử lại.'));
     } finally {
@@ -90,7 +89,7 @@ export default function AccountInfoPage() {
       const res = await apiClient.patch<User>('/users/me', { username: username.trim() });
       setUser(res.data);
       setUsernameEditing(false);
-      setSuccessDialog('Đã cập nhật tên người dùng!');
+      toast.success('Đã cập nhật tên người dùng!');
     } catch (err: unknown) {
       setUsernameError(extractApiError(err, 'Đổi tên người dùng thất bại.'));
     } finally {
@@ -389,14 +388,6 @@ export default function AccountInfoPage() {
         </div>
       </div>
 
-      <Dialog
-        open={successDialog !== null}
-        onClose={() => setSuccessDialog(null)}
-
-        actions={[{ label: 'OK', onClick: () => setSuccessDialog(null) }]}
-      >
-        {successDialog}
-      </Dialog>
     </div>
   );
 }

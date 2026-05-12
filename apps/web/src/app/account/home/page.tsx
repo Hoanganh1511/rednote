@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { Dialog } from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 import {
   Crown, Coins, LogIn, PlayCircle, ThumbsUp, Share2, Trophy,
@@ -69,21 +70,23 @@ export default function AccountHomePage() {
                 </span>
               </div>
             </div>
-            <Link
-              href="/account/profile"
-              className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
-            >
-              Trang cá nhân
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
+            {user?.username && (
+              <Link
+                href={`/channel/${user.username}`}
+                className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Trang cá nhân
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
           </div>
 
           {/* Stats row */}
           <div className="mt-3 flex items-center border-t border-border pt-3">
             {([
-              { label: 'Bài đăng', value: 0 },
-              { label: 'Đang theo dõi', value: 0 },
-              { label: 'Người theo dõi', value: 0 },
+              { label: 'Bài đăng', value: user?.videoCount ?? 0 },
+              { label: 'Đang theo dõi', value: user?.followingCount ?? 0 },
+              { label: 'Người theo dõi', value: user?.followerCount ?? 0 },
             ] as const).map(({ label, value }, i) => (
               <div
                 key={label}
@@ -98,15 +101,6 @@ export default function AccountHomePage() {
 
         {/* Account nav grid */}
         <AccountNavCards />
-
-        {/* Logout button */}
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-100"
-        >
-          <LogOut className="h-4 w-4" />
-          Đăng xuất
-        </button>
 
         {/* VIP banner */}
         <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#00aeec] to-[#007ab8] p-4 text-white shadow-sm">
@@ -144,6 +138,15 @@ export default function AccountHomePage() {
             <span className="ring-background absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2" />
           </div>
         </div>
+
+        {/* Logout button */}
+        <button
+          onClick={() => setShowLogoutConfirm(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-100"
+        >
+          <LogOut className="h-4 w-4" />
+          Đăng xuất
+        </button>
 
       </div>
 
@@ -185,9 +188,14 @@ export default function AccountHomePage() {
             <button className="rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:bg-accent">
               Sửa thông tin
             </button>
-            <button className="rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:bg-accent">
-              Không gian cá nhân →
-            </button>
+            {user?.username && (
+              <Link
+                href={`/channel/${user.username}`}
+                className="rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:bg-accent"
+              >
+                Không gian cá nhân →
+              </Link>
+            )}
           </div>
         </div>
 
@@ -275,33 +283,17 @@ export default function AccountHomePage() {
         </button>
       </div>
 
-      {/* Logout confirmation dialog */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-background rounded-2xl shadow-lg max-w-sm w-full">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-2">Xác nhận đăng xuất</h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowLogoutConfirm(false)}
-                  className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
-                >
-                  Đăng xuất
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        title="Xác nhận đăng xuất"
+        actions={[
+          { label: 'Hủy', variant: 'outline', onClick: () => setShowLogoutConfirm(false) },
+          { label: 'Đăng xuất', onClick: handleLogout, className: 'bg-red-500 hover:bg-red-500/90' },
+        ]}
+      >
+        Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?
+      </Dialog>
     </div>
   );
 }

@@ -6,10 +6,11 @@ import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
 import { PostEntity } from './post.entity';
 import { PostLikeEntity } from './post-like.entity';
+import { UserEntity } from '../users/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PostEntity, PostLikeEntity]),
+    TypeOrmModule.forFeature([PostEntity, PostLikeEntity, UserEntity]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

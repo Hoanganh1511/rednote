@@ -39,6 +39,9 @@ export class UserEntity extends BaseEntity {
   @Column({ name: 'video_count', default: 0 })
   videoCount: number;
 
+  @Column({ name: 'total_likes_received', default: 0 })
+  totalLikesReceived: number;
+
   @Index({ unique: true, sparse: true })
   @Column({ name: 'phone_number', nullable: true, unique: true, type: 'varchar', length: 20 })
   phoneNumber: string | null;

@@ -22,6 +22,7 @@ import { useUserStore } from '@/stores/user-store';
 import { apiClient } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { Modal } from '@/components/ui/modal';
+import { Dialog } from '@/components/ui/dialog';
 
 type ComingSoonConfig = {
   key: string;
@@ -228,33 +229,17 @@ export function AccountSidebar() {
         onClose={() => setSelected(null)}
       />
 
-      {/* Logout confirmation dialog */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-background rounded-2xl shadow-lg max-w-sm w-full">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-2">Xác nhận đăng xuất</h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowLogoutConfirm(false)}
-                  className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
-                >
-                  Đăng xuất
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        title="Xác nhận đăng xuất"
+        actions={[
+          { label: 'Hủy', variant: 'outline', onClick: () => setShowLogoutConfirm(false) },
+          { label: 'Đăng xuất', onClick: handleLogout, className: 'bg-red-500 hover:bg-red-500/90' },
+        ]}
+      >
+        Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?
+      </Dialog>
     </aside>
   );
 }

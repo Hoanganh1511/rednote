@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -37,5 +37,35 @@ export class UsersController {
   @ApiOperation({ summary: 'Get user by ID (public)' })
   async getUser(@Param('id') id: string): Promise<UserEntity> {
     return this.usersService.findById(id);
+  }
+
+  @Post(':id/follow')
+  @ApiOperation({ summary: 'Follow a user' })
+  async followUser(
+    @CurrentUser() user: UserEntity,
+    @Param('id') followingId: string,
+  ): Promise<void> {
+    await this.usersService.follow(user.id, followingId);
+  }
+
+  @Delete(':id/follow')
+  @ApiOperation({ summary: 'Unfollow a user' })
+  async unfollowUser(
+    @CurrentUser() user: UserEntity,
+    @Param('id') followingId: string,
+  ): Promise<void> {
+    await this.usersService.unfollow(user.id, followingId);
+  }
+
+  @Public()
+  @Get(':id/is-following')
+  @ApiOperation({ summary: 'Check if current user is following another user' })
+  async isFollowing(
+    @CurrentUser() user: UserEntity | null,
+    @Param('id') followingId: string,
+  ): Promise<{ isFollowing: boolean }> {
+    if (!user) return { isFollowing: false };
+    const isFollowing = await this.usersService.isFollowing(user.id, followingId);
+    return { isFollowing };
   }
 }

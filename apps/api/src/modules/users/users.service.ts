@@ -1,7 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository, IsNull } from 'typeorm';
 import { UserEntity } from './user.entity';
+import { FollowEntity } from './follow.entity';
 import { UploadService } from '../upload/upload.service';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -10,7 +11,10 @@ export class UsersService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
+    @InjectRepository(FollowEntity)
+    private readonly followRepo: Repository<FollowEntity>,
     private readonly uploadService: UploadService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findById(id: string): Promise<UserEntity> {
@@ -105,5 +109,123 @@ export class UsersService {
 
   async clearPasswordResetToken(id: string): Promise<void> {
     await this.userRepo.update(id, { passwordResetToken: null, passwordResetExpiresAt: null });
+  }
+
+  async follow(followerId: string, followingId: string): Promise<void> {
+    if (followerId === followingId) {
+      throw new BadRequestException('Không thể theo dõi chính mình');
+    }
+
+    // Check if both users exist
+    await Promise.all([
+      this.findById(followerId),
+      this.findById(followingId),
+    ]);
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Check if already following
+      const existing = await queryRunner.manager.findOne(FollowEntity, {
+        where: { followerId, followingId, deletedAt: IsNull() },
+      });
+
+      if (existing) {
+        await queryRunner.rollbackTransaction();
+        return; // Already following, idempotent
+      }
+
+      // Check soft-deleted follow
+      const softDeleted = await queryRunner.manager.findOne(FollowEntity, {
+        where: { followerId, followingId },
+      });
+
+      if (softDeleted) {
+        // Restore soft-deleted follow
+        await queryRunner.manager.update(
+          FollowEntity,
+          { id: softDeleted.id },
+          { deletedAt: null },
+        );
+      } else {
+        // Create new follow
+        const follow = queryRunner.manager.create(FollowEntity, {
+          followerId,
+          followingId,
+        });
+        await queryRunner.manager.save(follow);
+      }
+
+      // Update counters atomically
+      await queryRunner.manager.update(
+        UserEntity,
+        { id: followerId },
+        { followingCount: () => 'following_count + 1' },
+      );
+      await queryRunner.manager.update(
+        UserEntity,
+        { id: followingId },
+        { followerCount: () => 'follower_count + 1' },
+      );
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async unfollow(followerId: string, followingId: string): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const follow = await queryRunner.manager.findOne(FollowEntity, {
+        where: { followerId, followingId, deletedAt: IsNull() },
+      });
+
+      if (!follow) {
+        await queryRunner.rollbackTransaction();
+        return; // Not following, idempotent
+      }
+
+      // Soft delete
+      await queryRunner.manager.update(
+        FollowEntity,
+        { id: follow.id },
+        { deletedAt: new Date() },
+      );
+
+      // Update counters atomically
+      await queryRunner.manager.update(
+        UserEntity,
+        { id: followerId },
+        { followingCount: () => 'following_count - 1' },
+      );
+      await queryRunner.manager.update(
+        UserEntity,
+        { id: followingId },
+        { followerCount: () => 'follower_count - 1' },
+      );
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async isFollowing(followerId: string, followingId: string): Promise<boolean> {
+    const follow = await this.followRepo.findOne({
+      where: { followerId, followingId, deletedAt: IsNull() },
+    });
+    return !!follow;
   }
 }

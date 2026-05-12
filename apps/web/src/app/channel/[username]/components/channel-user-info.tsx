@@ -1,83 +1,120 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { User } from 'shared-types';
+import { useCurrentUser } from '@/hooks/use-auth';
+import { apiClient } from '@/lib/api-client';
 
 interface ChannelUserInfoProps {
   user: User;
 }
 
-export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
-  const [isFollowing, setIsFollowing] = useState(false);
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+  return String(n);
+}
 
-  const handleFollowClick = () => {
-    setIsFollowing(!isFollowing);
-    // TODO: Call follow API
+export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
+  const currentUser = useCurrentUser();
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const displayName = user.displayName || user.username;
+
+  // Check if current user is following this user
+  useEffect(() => {
+    if (currentUser && currentUser.id !== user.id) {
+      const checkFollowing = async () => {
+        try {
+          const response = await apiClient.get(`/users/${user.id}/is-following`);
+          setIsFollowing(response.data?.data?.isFollowing ?? false);
+        } catch {
+          // Handle error silently
+        }
+      };
+      checkFollowing();
+    }
+  }, [currentUser, user.id]);
+
+  const handleFollowClick = async () => {
+    if (!currentUser) return;
+
+    setIsLoading(true);
+    try {
+      if (isFollowing) {
+        await apiClient.delete(`/users/${user.id}/follow`);
+      } else {
+        await apiClient.post(`/users/${user.id}/follow`);
+      }
+      setIsFollowing(!isFollowing);
+    } catch {
+      // Handle error silently
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="flex items-end gap-4 -mt-16 relative z-10 mb-6">
-      {/* Avatar */}
-      <div className="flex-shrink-0">
-        {user.avatarUrl ? (
-          <img
-            src={user.avatarUrl}
-            alt={user.username}
-            className="h-32 w-32 rounded-full border-4 border-white object-cover shadow-lg"
-          />
-        ) : (
-          <div className="h-32 w-32 rounded-full border-4 border-white bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center shadow-lg">
-            <span className="text-3xl font-semibold text-slate-600">
-              {user.username.charAt(0).toUpperCase()}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 pb-2">
-        <div className="mb-3">
-          <h1 className="text-2xl font-bold text-slate-900">
-            {user.displayName || user.username}
-          </h1>
-          <p className="text-sm text-slate-600">@{user.username}</p>
+    <div className="relative z-10">
+      <div className="flex items-start gap-3">
+        {/* Avatar — overlap cover by 33px */}
+        <div className="shrink-0 -mt-[33px]">
+          {user.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={displayName}
+              className="h-24 w-24 rounded-full border-[3px] border-background object-cover shadow-md"
+            />
+          ) : (
+            <div className="h-24 w-24 rounded-full border-[3px] border-background bg-[#00aeec] flex items-center justify-center shadow-md">
+              <span className="text-2xl font-bold text-white">
+                {displayName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Stats */}
-        <div className="flex gap-6 text-sm">
-          <div>
-            <div className="font-semibold text-slate-900">
-              {user.videoCount || 0}
+        {/* Stats + Follow button — ~half screen width */}
+        <div className="w-[50vw] pt-2 flex flex-col gap-2.5 ml-auto">
+          {/* Stats */}
+          <div className="flex items-center">
+            <div className="flex-1 text-center">
+              <div className="text-[13px] font-bold leading-tight text-foreground">
+                {formatCount(user.followerCount)}
+              </div>
+              <div className="text-[9px] text-muted-foreground mt-0.5">Followers</div>
             </div>
-            <div className="text-xs text-slate-600">Video</div>
-          </div>
-          <div>
-            <div className="font-semibold text-slate-900">
-              {user.followerCount || 0}
+            <div className="w-px h-6 bg-border" />
+            <div className="flex-1 text-center">
+              <div className="text-[13px] font-bold leading-tight text-foreground">
+                {formatCount(user.followingCount)}
+              </div>
+              <div className="text-[9px] text-muted-foreground mt-0.5">Follow</div>
             </div>
-            <div className="text-xs text-slate-600">Người theo dõi</div>
-          </div>
-          <div>
-            <div className="font-semibold text-slate-900">
-              {user.followingCount || 0}
+            <div className="w-px h-6 bg-border" />
+            <div className="flex-1 text-center">
+              <div className="text-[13px] font-bold leading-tight text-foreground">
+                {formatCount(user.totalLikesReceived)}
+              </div>
+              <div className="text-[9px] text-muted-foreground mt-0.5">Likes</div>
             </div>
-            <div className="text-xs text-slate-600">Đang theo dõi</div>
           </div>
-        </div>
-      </div>
 
-      {/* Follow Button */}
-      <div className="flex-shrink-0 pb-2">
-        <button
-          onClick={handleFollowClick}
-          className={`px-6 py-2 rounded-full font-semibold transition-colors ${
-            isFollowing
-              ? 'bg-slate-200 text-slate-900 hover:bg-slate-300'
-              : 'bg-red-500 text-white hover:bg-red-600'
-          }`}
-        >
-          {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
-        </button>
+          {/* Follow button */}
+          {currentUser && currentUser.id !== user.id ? (
+            <button
+              onClick={handleFollowClick}
+              disabled={isLoading}
+              className={`w-full rounded py-1.5 text-xs font-semibold transition-colors active:opacity-80 disabled:opacity-50 ${
+                isFollowing
+                  ? 'border border-border text-foreground hover:bg-accent'
+                  : 'bg-[#00aeec] text-white hover:bg-[#00aeec]/90'
+              }`}
+            >
+              {isFollowing ? '✓ Đang theo dõi' : '+ Theo dõi'}
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -7,13 +7,14 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, In, Repository } from 'typeorm';
+import { QueryFailedError, In, Repository, DataSource } from 'typeorm';
 import { PostEntity } from './post.entity';
 import { PostLikeEntity } from './post-like.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ListMyPostsDto } from './dto/list-my-posts.dto';
 import { ListFeedPostsDto } from './dto/list-feed-posts.dto';
+import { UserEntity } from '../users/user.entity';
 import { POSTS_FEED_PAGE_SIZE } from './posts.constants';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class PostsService {
     @InjectRepository(PostLikeEntity)
     private readonly postLikeRepo: Repository<PostLikeEntity>,
     private readonly jwtService: JwtService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private calculateAge(birthday: string | null): number | null {
@@ -329,17 +331,58 @@ export class PostsService {
 
   /** Toggle like (một user một lượt thích / gỡ). */
   async togglePostLike(userId: string, postId: string): Promise<{ liked: boolean; likeCount: number }> {
-    await this.getPublishedPostById(postId, null);
+    const post = await this.getPublishedPostById(postId, null);
+    const authorId = post.userId;
 
-    const existing = await this.postLikeRepo.findOne({ where: { postId, userId } });
-    if (existing) {
-      await this.postLikeRepo.remove(existing);
-    } else {
-      await this.postLikeRepo.save(this.postLikeRepo.create({ postId, userId }));
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const existing = await queryRunner.manager.findOne(PostLikeEntity, {
+        where: { postId, userId },
+      });
+
+      const isLiking = !existing;
+
+      if (existing) {
+        await queryRunner.manager.remove(PostLikeEntity, existing);
+        // Decrement counters
+        await queryRunner.manager.update(
+          PostEntity,
+          { id: postId },
+          { likeCount: () => 'like_count - 1' },
+        );
+        await queryRunner.manager.update(
+          UserEntity,
+          { id: authorId },
+          { totalLikesReceived: () => 'total_likes_received - 1' },
+        );
+      } else {
+        const like = queryRunner.manager.create(PostLikeEntity, { postId, userId });
+        await queryRunner.manager.save(PostLikeEntity, like);
+        // Increment counters
+        await queryRunner.manager.update(
+          PostEntity,
+          { id: postId },
+          { likeCount: () => 'like_count + 1' },
+        );
+        await queryRunner.manager.update(
+          UserEntity,
+          { id: authorId },
+          { totalLikesReceived: () => 'total_likes_received + 1' },
+        );
+      }
+
+      await queryRunner.commitTransaction();
+
+      const likeCount = await this.postLikeRepo.count({ where: { postId } });
+      return { liked: isLiking, likeCount };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
-
-    const likeCount = await this.postLikeRepo.count({ where: { postId } });
-    const liked = !existing;
-    return { liked, likeCount };
   }
 }

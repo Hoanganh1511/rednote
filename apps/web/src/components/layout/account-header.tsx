@@ -307,83 +307,15 @@ function UserMenu({ user }: { user: User }) {
         </div>
       </div>
 
-      {/* Backdrop */}
+      {/* Backdrop — desktop only, closes dropdown on outside click */}
       <div
         className={cn(
-          'fixed inset-0 z-backdrop bg-black/50',
+          'fixed inset-0 z-backdrop hidden md:block md:bg-transparent',
           'transition-opacity duration-300',
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
-          'md:bg-transparent',
         )}
         onClick={() => setOpen(false)}
       />
-
-      {/* Mobile right drawer */}
-      <div
-        className={cn(
-          'fixed top-0 right-0 bottom-0 z-dropdown w-72 md:hidden',
-          'bg-background shadow-2xl flex flex-col',
-          'transition-transform duration-300 ease-out',
-          open ? 'translate-x-0' : 'translate-x-full',
-        )}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-          <p className="font-semibold text-sm">Tài khoản</p>
-          <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex items-center gap-3 px-5 py-5">
-            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-[#00aeec] flex items-center justify-center text-lg font-bold text-white">
-              {user.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : initial}
-            </div>
-            <div className="min-w-0">
-              <p className="font-semibold truncate">{user.displayName ?? user.username ?? 'Người dùng'}</p>
-              {user.phoneNumber && <p className="text-xs text-muted-foreground mt-0.5">{user.phoneNumber}</p>}
-              <div className="mt-1.5 flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-[#00aeec]">LV1</span>
-                <div className="bg-muted h-1.5 w-20 overflow-hidden rounded-full">
-                  <div className="h-full w-[10%] rounded-full bg-[#00aeec]" />
-                </div>
-                <span className="text-muted-foreground text-[10px]">LV2</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 border-y border-border">
-            {[
-              { label: 'Theo dõi', value: user.followingCount },
-              { label: 'Hâm mộ', value: user.followerCount },
-              { label: 'Động', value: user.videoCount },
-            ].map(({ label, value }, i) => (
-              <div key={label} className={cn('flex flex-col items-center gap-1 py-4', i > 0 && 'border-l border-border')}>
-                <span className="text-base font-semibold">{value}</span>
-                <span className="text-muted-foreground text-xs">{label}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="py-2">
-            {MENU_ITEMS.map(({ label, href }) => (
-              <Link key={href} href={href} onClick={() => setOpen(false)}
-                className="flex items-center justify-between px-5 py-4 text-sm hover:bg-accent transition-colors">
-                {label}
-                <ChevronRight className="text-muted-foreground h-4 w-4" />
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="border-t border-border px-3 py-3 shrink-0">
-          <button onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">
-            <LogOut className="h-4 w-4" />
-            Đăng xuất
-          </button>
-        </div>
-      </div>
     </>
   );
 }

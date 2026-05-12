@@ -35,5 +35,8 @@ export class PostEntity extends BaseEntity {
 
   @Column({ name: 'published_at', type: 'timestamptz', nullable: true, default: null })
   publishedAt: Date | null;
+
+  @Column({ name: 'like_count', default: 0 })
+  likeCount: number;
 }
 

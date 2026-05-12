@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
-type Tab = 'posts' | 'videos';
+type Tab = 'home' | 'posts' | 'videos';
+
+const TABS: { id: Tab; label: string; disabled?: boolean }[] = [
+  { id: 'home', label: 'Trang chủ' },
+  { id: 'posts', label: 'Bài đăng' },
+  { id: 'videos', label: 'Video', disabled: true },
+];
 
 interface ChannelTabsProps {
   onTabChange?: (tab: Tab) => void;
@@ -12,37 +18,33 @@ interface ChannelTabsProps {
 export function ChannelTabs({ onTabChange }: ChannelTabsProps) {
   const [activeTab, setActiveTab] = useState<Tab>('posts');
 
-  const handleTabChange = (tab: Tab) => {
+  const handleChange = (tab: Tab) => {
     setActiveTab(tab);
     onTabChange?.(tab);
   };
 
   return (
-    <div className="mb-6 border-b border-slate-200">
-      <div className="flex gap-8">
-        <button
-          onClick={() => handleTabChange('posts')}
-          className={cn(
-            'pb-3 px-1 border-b-2 font-semibold text-sm transition-colors',
-            activeTab === 'posts'
-              ? 'border-slate-900 text-slate-900'
-              : 'border-transparent text-slate-500 hover:text-slate-700',
-          )}
-        >
-          Bài viết
-        </button>
-        <button
-          onClick={() => handleTabChange('videos')}
-          className={cn(
-            'pb-3 px-1 border-b-2 font-semibold text-sm transition-colors opacity-50 cursor-not-allowed',
-            activeTab === 'videos'
-              ? 'border-slate-900 text-slate-900'
-              : 'border-transparent text-slate-500 hover:text-slate-700',
-          )}
-          disabled
-        >
-          Video <span className="text-xs ml-1">Sắp có</span>
-        </button>
+    <div className="sticky top-14 z-20 bg-background border-b border-border mb-3">
+      <div className="flex">
+        {TABS.map(({ id, label, disabled }) => (
+          <button
+            key={id}
+            onClick={() => !disabled && handleChange(id)}
+            disabled={disabled}
+            className={cn(
+              'relative flex-1 py-3 text-sm font-medium transition-colors',
+              activeTab === id
+                ? 'text-[#00aeec]'
+                : 'text-muted-foreground hover:text-foreground',
+              disabled && 'cursor-not-allowed opacity-40',
+            )}
+          >
+            {label}
+            {activeTab === id && (
+              <span className="absolute bottom-0 left-1/2 h-0.5 w-10 -translate-x-1/2 rounded-full bg-[#00aeec]" />
+            )}
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -337,109 +337,15 @@ function UserMenu({ user }: { user: User }) {
         </div>
       </div>
 
-      {/* Backdrop (both mobile drawer + desktop dropdown close) */}
+      {/* Backdrop — desktop only, closes dropdown on outside click */}
       <div
         className={cn(
-          'z-backdrop fixed inset-0 bg-black/50',
+          'z-backdrop fixed inset-0 hidden md:block md:bg-transparent',
           'transition-opacity duration-300',
           open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
-          'md:bg-transparent',
         )}
         onClick={() => setOpen(false)}
       />
-
-      {/* Mobile right drawer */}
-      <div
-        className={cn(
-          'z-dropdown fixed top-0 right-0 bottom-0 w-72 md:hidden',
-          'bg-background flex flex-col shadow-2xl',
-          'transition-transform duration-300 ease-out',
-          open ? 'translate-x-0' : 'translate-x-full',
-        )}
-      >
-        <div className="border-border flex shrink-0 items-center justify-between border-b px-5 py-4">
-          <p className="text-sm font-semibold">Tài khoản</p>
-          <button
-            onClick={() => setOpen(false)}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex items-center gap-3 px-5 py-5">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#00aeec] text-lg font-bold text-white">
-              {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                initial
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="truncate font-semibold">
-                {user.displayName ?? user.username ?? 'Người dùng'}
-              </p>
-              {user.phoneNumber && (
-                <p className="text-muted-foreground mt-0.5 text-xs">{user.phoneNumber}</p>
-              )}
-              <div className="mt-1.5 flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-[#00aeec]">LV1</span>
-                <div className="bg-muted h-1.5 w-20 overflow-hidden rounded-full">
-                  <div className="h-full w-[10%] rounded-full bg-[#00aeec]" />
-                </div>
-                <span className="text-muted-foreground text-[10px]">LV2</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-border grid grid-cols-3 border-y">
-            {[
-              { label: 'Theo dõi', value: user.followingCount },
-              { label: 'Hâm mộ', value: user.followerCount },
-              { label: 'Động', value: user.videoCount },
-            ].map(({ label, value }, i) => (
-              <div
-                key={label}
-                className={cn(
-                  'flex flex-col items-center gap-1 py-4',
-                  i > 0 && 'border-border border-l',
-                )}
-              >
-                <span className="text-base font-semibold">{value}</span>
-                <span className="text-muted-foreground text-xs">{label}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="py-2">
-            {MENU_ITEMS.map(({ label, href, comingSoon }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setOpen(false)}
-                className="relative hover:bg-accent flex items-center justify-between px-5 py-4 text-sm transition-colors"
-              >
-                {label}
-                <div className="flex items-center gap-2">
-                  {comingSoon && <ComingSoonBadge />}
-                  <ChevronRight className="text-muted-foreground h-4 w-4" />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="border-border shrink-0 border-t px-3 py-3">
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50"
-          >
-            <LogOut className="h-4 w-4" />
-            Đăng xuất
-          </button>
-        </div>
-      </div>
     </>
   );
 }

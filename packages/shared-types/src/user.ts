@@ -17,6 +17,7 @@ export interface User {
   followerCount: number;
   followingCount: number;
   videoCount: number;
+  totalLikesReceived: number;
   createdAt: string;
   updatedAt: string;
 }
