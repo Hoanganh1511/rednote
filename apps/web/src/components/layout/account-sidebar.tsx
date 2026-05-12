@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   User,
@@ -16,9 +16,11 @@ import {
   LayoutGrid,
   ChevronRight,
   X,
+  LogOut,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useUserStore } from '@/stores/user-store';
 import { apiClient } from '@/lib/api-client';
+import { cn } from '@/lib/utils';
 import { Modal } from '@/components/ui/modal';
 
 type ComingSoonConfig = {
@@ -147,6 +149,20 @@ export function AccountSidebar() {
   const pathname = usePathname();
   const configs = useComingSoonConfigs();
   const [selected, setSelected] = useState<SidebarItem | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const router = useRouter();
+  const logout = useUserStore((s) => s.logout);
+
+  const handleLogout = async () => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch {
+      /* ignore */
+    }
+    logout();
+    setShowLogoutConfirm(false);
+    router.push('/');
+  };
 
   return (
     <aside className="hidden w-52 shrink-0 md:block">
@@ -192,6 +208,17 @@ export function AccountSidebar() {
             })}
           </div>
         ))}
+
+        {/* Logout button */}
+        <div className="border-border mt-4 border-t pt-3">
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="text-red-600 hover:bg-red-50 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">Đăng xuất</span>
+          </button>
+        </div>
       </nav>
 
       <ComingSoonModal
@@ -200,6 +227,34 @@ export function AccountSidebar() {
         config={configs.find((c) => c.key === selected?.href)}
         onClose={() => setSelected(null)}
       />
+
+      {/* Logout confirmation dialog */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-background rounded-2xl shadow-lg max-w-sm w-full">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold mb-2">Xác nhận đăng xuất</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

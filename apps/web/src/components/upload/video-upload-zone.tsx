@@ -1,18 +1,49 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Cloud, Upload } from 'lucide-react';
+import { useState, useRef, type DragEvent, type ChangeEvent } from 'react';
+import { motion } from 'motion/react';
+import { CloudUpload } from 'lucide-react';
+import {
+  SHORT_VIDEO_MAX_SIZE_BYTES,
+  SHORT_VIDEO_MAX_SIZE_LABEL,
+  SHORT_VIDEO_MAX_DURATION_MIN,
+} from './upload-constants';
 import type { UploadedVideo } from './upload.types';
 
 interface VideoUploadZoneProps {
   onVideoSelected: (video: UploadedVideo) => void;
 }
 
+function inferHdr(file: File): boolean {
+  const n = file.name.toUpperCase();
+  return n.includes('HDR') || n.includes('DOLBY') || n.includes('DV');
+}
+
 export function VideoUploadZone({ onVideoSelected }: VideoUploadZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const maxBytes = SHORT_VIDEO_MAX_SIZE_BYTES;
+  const maxLabel = SHORT_VIDEO_MAX_SIZE_LABEL;
+
+  const processFile = (file: File) => {
+    if (file.size > maxBytes) {
+      window.alert(`File vượt quá ${maxLabel}. Vui lòng chọn file nhỏ hơn.`);
+      return;
+    }
+
+    const video: UploadedVideo = {
+      id: crypto.randomUUID(),
+      file,
+      name: file.name || 'video.mp4',
+      size: file.size,
+      hdr: inferHdr(file),
+    };
+
+    onVideoSelected(video);
+  };
+
+  const handleDragOver = (e: DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
   };
@@ -21,71 +52,61 @@ export function VideoUploadZone({ onVideoSelected }: VideoUploadZoneProps) {
     setIsDragOver(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-
     const files = Array.from(e.dataTransfer.files);
     const videoFile = files.find((f) => f.type.startsWith('video/'));
-
-    if (videoFile) {
-      processFile(videoFile);
-    }
+    if (videoFile) processFile(videoFile);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.currentTarget.files || []);
-    const videoFile = files[0];
-
-    if (videoFile) {
-      processFile(videoFile);
-    }
-  };
-
-  const processFile = (file: File) => {
-    // Validate file size (2GB default)
-    const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
-    if (file.size > MAX_SIZE) {
-      alert(`File quá lớn. Tối đa ${MAX_SIZE / (1024 * 1024 * 1024)}GB`);
-      return;
-    }
-
-    const video: UploadedVideo = {
-      id: Math.random().toString(36).substr(2, 9),
-      file,
-      name: file.name,
-      size: file.size,
-    };
-
-    onVideoSelected(video);
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0];
+    if (file) processFile(file);
   };
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`rounded-lg border-2 border-dashed transition-all ${
-        isDragOver ? 'border-primary bg-primary/5' : 'border-border bg-card hover:border-primary/50'
-      }`}
+      className={[
+        'mx-auto max-w-xl rounded-2xl border border-dashed transition-colors duration-300',
+        isDragOver
+          ? 'border-[#00A1D6] bg-cyan-50/60'
+          : 'border-slate-200/90 bg-[#F7F8FA] hover:border-cyan-300/70',
+      ].join(' ')}
     >
-      <div className="px-6 py-12 text-center sm:py-16">
-        <Cloud
-          className={`mx-auto h-16 w-16 transition-colors ${isDragOver ? 'text-primary' : 'text-muted-foreground'}`}
-        />
+      <div className="flex flex-col items-center px-5 pb-9 pt-8 sm:px-6 sm:pb-10 sm:pt-9">
+        <motion.div
+          animate={{ y: isDragOver ? -2 : 0 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200/80 sm:h-14 sm:w-14"
+        >
+          <CloudUpload
+            className={`h-6 w-6 transition-colors duration-300 sm:h-7 sm:w-7 ${
+              isDragOver ? 'text-[#00A1D6]' : 'text-slate-400'
+            }`}
+            strokeWidth={1.25}
+          />
+        </motion.div>
 
-        <h2 className="text-foreground mt-4 text-lg font-semibold sm:text-xl">
-          {isDragOver ? '📤 Thả video tại đây' : 'Nhấn hoặc kéo video vào khu vực này'}
-        </h2>
-
-        <p className="text-muted-foreground mt-2 text-sm">Hỗ trợ: MP4, MOV, MKV (Tối đa 2GB)</p>
+        <p className="mt-3.5 max-w-md text-center text-sm font-medium text-slate-800 sm:text-base">
+          Tải video ngắn (kéo thả hoặc chọn file)
+        </p>
+        <p className="mt-1.5 max-w-md text-center text-xs leading-relaxed text-slate-500 sm:text-sm">
+          {`MP4 / MOV · tối đa ${SHORT_VIDEO_MAX_DURATION_MIN} phút · file ≤ ${maxLabel} (ước tính 1080p dọc)`}
+        </p>
 
         <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="bg-primary text-primary-foreground mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-3 font-medium transition-opacity hover:opacity-90"
+          className="mt-9 rounded-full bg-[#00A1D6] px-8 py-3 text-sm font-semibold text-white shadow-md transition-colors duration-200 hover:bg-[#00b3ea] active:scale-[0.99] sm:mt-10 sm:px-9 sm:py-3.5 sm:text-[0.9375rem]"
         >
-          <Upload className="h-4 w-4" />
-          Chọn video
+          Tải video ngắn
         </button>
 
         <input
@@ -95,28 +116,7 @@ export function VideoUploadZone({ onVideoSelected }: VideoUploadZoneProps) {
           onChange={handleFileSelect}
           className="hidden"
         />
-
-        {/* Guidelines */}
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-900/50">
-            <div className="text-2xl">📦</div>
-            <p className="text-foreground mt-2 text-xs font-medium">Kích thước</p>
-            <p className="text-muted-foreground mt-1 text-xs">Tối đa 2GB</p>
-          </div>
-
-          <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-900/50">
-            <div className="text-2xl">⏱️</div>
-            <p className="text-foreground mt-2 text-xs font-medium">Thời lượng</p>
-            <p className="text-muted-foreground mt-1 text-xs">Tối đa 3 phút</p>
-          </div>
-
-          <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-900/50">
-            <div className="text-2xl">🎬</div>
-            <p className="text-foreground mt-2 text-xs font-medium">Format</p>
-            <p className="text-muted-foreground mt-1 text-xs">MP4, MOV, MKV</p>
-          </div>
-        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

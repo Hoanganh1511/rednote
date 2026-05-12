@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { UserPlus, UserCheck } from 'lucide-react';
+import { ROUTES } from '@/constants';
 import { cn } from '@/lib/utils';
 
 interface SearchUserCardProps {
@@ -28,18 +30,18 @@ export function SearchUserCard({ user }: SearchUserCardProps) {
     <div className="hover:bg-accent/50 p-4 transition-colors">
       <div className="flex items-center justify-between gap-3">
         {/* User info */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <Link href={ROUTES.CHANNEL(user.name)} className="flex items-center gap-3 flex-1 min-w-0 hover:no-underline">
           <img
             src={user.avatar}
             alt={user.name}
-            className="h-10 w-10 rounded-full shrink-0"
+            className="h-10 w-10 rounded-full shrink-0 hover:opacity-75 transition-opacity"
           />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className={cn('text-sm font-bold shrink-0', genderColors[user.genderColor])}>
                 {user.gender === 'Nam' ? '♂' : '♀'}
               </span>
-              <p className="font-medium text-sm truncate hover:text-[#00aeec] transition-colors cursor-pointer">
+              <p className="font-medium text-sm truncate hover:text-[#00aeec] transition-colors">
                 {user.name}
               </p>
             </div>
@@ -49,7 +51,7 @@ export function SearchUserCard({ user }: SearchUserCardProps) {
               </p>
             )}
           </div>
-        </div>
+        </Link>
 
         {/* Follow button */}
         <button

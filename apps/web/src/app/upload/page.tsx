@@ -1,143 +1,110 @@
 'use client';
 
 import { useState } from 'react';
-import { Video, Clapperboard, FileText, Gamepad2, Music } from 'lucide-react';
-import { UploadTabs } from '@/components/upload/upload-tabs';
-import { VideoUploadZone } from '@/components/upload/video-upload-zone';
-import { UploadProgress } from '@/components/upload/upload-progress';
-import { VideoSettingsForm } from '@/components/upload/video-settings-form';
-import type { UploadedVideo } from '@/components/upload/upload.types';
+import { useRouter } from 'next/navigation';
+import { ChevronDown, Clapperboard, FileText, NotebookPen } from 'lucide-react';
+import { MobileNav } from '@/components/layout/mobile-nav';
+import { Header } from '@/components/layout/header';
+import { SITE_MAIN_CONTENT_CLASS } from '@/constants';
+import { cn } from '@/lib/utils';
+import { creatorSelectClassName } from '@/components/upload/upload.controls';
+
+type UploadDestination = 'video' | 'post' | 'article';
+
+const DESTINATIONS: {
+  value: UploadDestination;
+  label: string;
+  href: string;
+  note: string;
+  Icon: typeof Clapperboard;
+}[] = [
+  {
+    value: 'video',
+    label: 'Đăng video',
+    href: '/upload/video',
+    note: 'Video editor đang trong giai đoạn upcoming.',
+    Icon: Clapperboard,
+  },
+  {
+    value: 'post',
+    label: 'Đăng post',
+    href: '/upload/post',
+    note: 'Luồng đang ưu tiên triển khai trước.',
+    Icon: FileText,
+  },
+  {
+    value: 'article',
+    label: 'Viết chuyên mục',
+    href: '/upload/article',
+    note: 'Bài dài có cấu trúc chuyên sâu.',
+    Icon: NotebookPen,
+  },
+];
 
 export default function UploadPage() {
-  const [activeTab, setActiveTab] = useState<
-    'video' | 'short' | 'article' | 'interactive' | 'audio'
-  >('video');
-  const [uploadedVideo, setUploadedVideo] = useState<UploadedVideo | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const tabs = [
-    { id: 'video' as const, label: 'Đăng video', icon: Video },
-    { id: 'short' as const, label: 'Đăng phim ngắn', icon: Clapperboard },
-    { id: 'article' as const, label: 'Đăng chuyên mục', icon: FileText },
-    { id: 'interactive' as const, label: 'Video tương tác', icon: Gamepad2 },
-    { id: 'audio' as const, label: 'Đăng audio', icon: Music },
-  ];
+  const router = useRouter();
+  const [selectedType, setSelectedType] = useState<UploadDestination>('post');
+  const selected = DESTINATIONS.find((x) => x.value === selectedType) ?? DESTINATIONS[0]!;
+  const SelectedIcon = selected.Icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-      {/* Header */}
-      <div className="border-border sticky top-0 z-40 border-b bg-white/95 backdrop-blur dark:bg-slate-950/95">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <h1 className="text-foreground text-2xl font-bold">Đăng tải nội dung</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Chọn loại nội dung bạn muốn đăng tải</p>
-        </div>
-      </div>
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <div className="flex flex-1 flex-col bg-[#F4F6F9] pb-28 text-slate-900 md:pb-0">
+        <header className="border-b border-slate-200/90 bg-white">
+          <div className={cn(SITE_MAIN_CONTENT_CLASS, 'px-4 py-7 sm:px-6 lg:px-8')}>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#00A1D6]">
+              Creator Studio
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              Trung tâm đăng tải
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-base">
+              Chọn loại nội dung để chuyển sang trang biên soạn chuyên biệt.
+            </p>
+          </div>
+        </header>
 
-      <div className="mx-auto max-w-7xl px-0 py-0 sm:px-0 lg:px-0">
-        {/* Tabs */}
-        <UploadTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-
-        <div className="px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mt-8 grid gap-6 lg:grid-cols-3">
-            {/* Main upload area */}
-            <div className="lg:col-span-2">
-              {activeTab === 'video' && !uploadedVideo && (
-                <VideoUploadZone
-                  onVideoSelected={(video) => {
-                    setUploadedVideo(video);
-                    setIsUploading(true);
-                  }}
-                />
-              )}
-
-              {activeTab === 'video' && uploadedVideo && isUploading && (
-                <UploadProgress
-                  video={uploadedVideo}
-                  onComplete={(completeVideo) => {
-                    setUploadedVideo(completeVideo);
-                    setIsUploading(false);
-                  }}
-                  onCancel={() => {
-                    setUploadedVideo(null);
-                    setIsUploading(false);
-                  }}
-                />
-              )}
-
-              {activeTab === 'video' && uploadedVideo && !isUploading && (
-                <VideoSettingsForm
-                  video={uploadedVideo}
-                  onSubmit={(formData) => {
-                    console.log('Submit video with settings:', formData);
-                    // API call here
-                  }}
-                  onBack={() => setUploadedVideo(null)}
-                />
-              )}
-
-              {/* Placeholder for other tabs */}
-              {activeTab !== 'video' && (
-                <div className="border-border bg-card rounded-lg border-2 border-dashed p-8 text-center">
-                  <p className="text-muted-foreground">Tính năng này sẽ được cập nhật sớm</p>
-                </div>
-              )}
+        <main className="mx-auto max-w-3xl flex-1 px-4 py-6 sm:px-6 lg:py-8">
+          <section className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
+            <label htmlFor="content-type-select" className="text-sm font-semibold text-slate-800">
+              Loại nội dung
+            </label>
+            <div className="relative mt-2 max-w-md">
+              <select
+                id="content-type-select"
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value as UploadDestination)}
+                className={creatorSelectClassName}
+              >
+                {DESTINATIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             </div>
 
-            {/* Sidebar - Guidelines */}
-            <aside className="hidden lg:block">
-              <div className="sticky top-24 space-y-4">
-                {activeTab === 'video' && <VideoGuidelines />}
-              </div>
-            </aside>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+            <div className="mt-3 flex items-start gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#00A1D6] ring-1 ring-slate-200/80">
+                <SelectedIcon className="h-4 w-4" />
+              </span>
+              <p className="text-sm text-slate-500">{selected.note}</p>
+            </div>
 
-function VideoGuidelines() {
-  return (
-    <div className="space-y-4">
-      {/* File Size */}
-      <div className="bg-card rounded-lg p-4 shadow-sm">
-        <h3 className="text-foreground mb-2 font-semibold">📦 Kích thước video</h3>
-        <ul className="text-muted-foreground space-y-1 text-sm">
-          <li>• Tối đa 2GB (hoặc 10GB nếu 1000+ followers)</li>
-          <li>• Thời lượng tối đa 3 phút</li>
-        </ul>
-      </div>
-
-      {/* Format */}
-      <div className="bg-card rounded-lg p-4 shadow-sm">
-        <h3 className="text-foreground mb-2 font-semibold">🎬 Định dạng video</h3>
-        <p className="text-muted-foreground mb-2 text-sm">Khuyến nghị:</p>
-        <div className="flex flex-wrap gap-2">
-          {['MP4', 'MOV', 'MKV'].map((format) => (
-            <span
-              key={format}
-              className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-medium"
+            <button
+              type="button"
+              onClick={() => router.push(selected.href)}
+              className="mt-4 rounded-xl bg-[#00A1D6] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#00b3ea]"
             >
-              {format}
-            </span>
-          ))}
-        </div>
+              Tiếp tục
+            </button>
+          </section>
+        </main>
       </div>
 
-      {/* Resolution */}
-      <div className="bg-card rounded-lg p-4 shadow-sm">
-        <h3 className="text-foreground mb-2 font-semibold">📐 Độ phân giải</h3>
-        <p className="text-muted-foreground text-sm">Khuyến nghị: 1080P hoặc cao hơn</p>
-      </div>
-
-      {/* Tips */}
-      <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-950/20">
-        <h3 className="mb-2 font-semibold text-blue-900 dark:text-blue-200">💡 Mẹo</h3>
-        <p className="text-xs text-blue-800 dark:text-blue-300">
-          Chuẩn bị thông tin video (tiêu đề, mô tả, thumbnail) trước khi upload để tiết kiệm thời
-          gian
-        </p>
-      </div>
+      <MobileNav className="fixed bottom-0 left-0 right-0 z-header border-t border-slate-200/90 bg-white md:hidden" />
     </div>
   );
 }

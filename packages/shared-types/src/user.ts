@@ -9,6 +9,7 @@ export interface User {
   hasPassword: boolean;
   displayName: string | null;
   avatarUrl: string | null;
+  coverUrl?: string | null;
   bio: string | null;
   gender: UserGender | null;
   birthday: string | null;

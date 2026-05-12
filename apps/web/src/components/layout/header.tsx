@@ -1,71 +1,66 @@
 'use client';
 
 import Link from 'next/link';
-import { MessageCircle, Bookmark, ChevronRight, LogOut, ScanEye, X, Upload } from 'lucide-react';
+import { MessageCircle, Bookmark, ChevronRight, LogOut, ScanEye, X, Upload, type LucideIcon } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { LoginModal } from '@/components/auth/login-modal';
+import { useRouter } from 'next/navigation';
+import { useLoginModalStore } from '@/stores/login-modal-store';
 import { SearchDropdown } from '@/components/search-dropdown';
 import { useUserStore } from '@/stores/user-store';
 import { apiClient } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { ROUTES } from '@/constants';
+import { ROUTES, SITE_MAIN_CONTENT_CLASS } from '@/constants';
 import type { User } from 'shared-types';
+import { ComingSoonBadge } from '@/components/ui/coming-soon-badge';
 
-const LEFT_LINKS = [
+const LEFT_LINKS: Array<{ label: string; href: string; icon: LucideIcon | null; comingSoon?: boolean }> = [
   { label: 'Trang chủ', href: ROUTES.HOME, icon: ScanEye },
-  { label: 'Xây hình ảnh cá nhân', href: '/creator', icon: null },
-  { label: 'Phim đã xem', href: '/film-review', icon: null },
-] as const;
+  { label: 'Xây hình ảnh cá nhân', href: '/creator', icon: null, comingSoon: true },
+  { label: 'Phim đã xem', href: '/film-review', icon: null, comingSoon: true },
+];
 
-const RIGHT_ACTIONS = [
+const RIGHT_ACTIONS: Array<{ label: string; href: string; icon: LucideIcon; comingSoon?: boolean }> = [
   { label: 'Đăng tải', href: '/upload', icon: Upload },
-  { label: 'Tin nhắn', href: '/messages', icon: MessageCircle },
-] as const;
+  { label: 'Tin nhắn', href: '/messages', icon: MessageCircle, comingSoon: true },
+];
 
-const MENU_ITEMS = [
+const MENU_ITEMS: Array<{ label: string; href: string; comingSoon?: boolean }> = [
   { label: 'Trung tâm cá nhân', href: '/account/home' },
-  { label: 'Quản lý đệ trình', href: '/manage' },
-  { label: 'Các dịch vụ được đề xuất', href: '/services' },
-] as const;
+  { label: 'Quản lý đệ trình', href: '/manage', comingSoon: true },
+  { label: 'Các dịch vụ được đề xuất', href: '/services', comingSoon: true },
+];
 
 export function Header() {
-  const [loginOpen, setLoginOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const user = useUserStore((s) => s.user);
-  const pathname = usePathname();
-  const isHome = pathname === '/';
+  const openLoginModal = useLoginModalStore((s) => s.openModal);
 
   useEffect(() => setMounted(true), []);
 
   return (
     <>
-      <header
-        className={cn(
-          'z-header sticky top-0 transition-colors duration-300',
-          isHome
-            ? 'border-b-0 bg-gradient-to-b from-black/[0.35] to-transparent'
-            : 'border-border bg-background border-b',
-        )}
-      >
-        <div className="flex h-16 items-center gap-x-6 px-4">
+      <header className="z-header sticky top-0 bg-white shadow-none">
+        <div
+          className={cn(
+            SITE_MAIN_CONTENT_CLASS,
+            'flex h-16 items-center gap-x-6 px-3 sm:px-4 md:px-5 lg:px-6',
+          )}
+        >
           <nav className="hidden shrink-0 items-center gap-x-5 lg:flex">
-            {LEFT_LINKS.map(({ label, href, icon: Icon }) => (
+            {LEFT_LINKS.map(({ label, href, icon: Icon, comingSoon }) => (
               <Link
                 key={href}
                 href={href}
                 className={cn(
-                  'flex items-center gap-1.5 text-[13px] font-light whitespace-nowrap transition-colors',
-                  isHome
-                    ? 'text-white hover:text-white'
-                    : 'text-muted-foreground hover:text-foreground',
+                  'relative text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-[13px] font-light whitespace-nowrap transition-colors',
                   !Icon &&
                     'transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0',
                 )}
               >
                 {Icon && <Icon className="h-4 w-4 shrink-0" />}
                 {label}
+                {comingSoon && <ComingSoonBadge />}
               </Link>
             ))}
           </nav>
@@ -80,37 +75,44 @@ export function Header() {
                 <UserMenu user={user} />
               ) : (
                 <button
-                  onClick={() => setLoginOpen(true)}
-                  className="shrink-0 rounded-md bg-[#00aeec] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                  onClick={() => openLoginModal()}
+                  className="hidden sm:block shrink-0 rounded-md bg-[#00aeec] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
                 >
                   Đăng nhập
                 </button>
               )}
             </div>
+
+            {/* Mobile: login button only */}
+            {!user && !mounted && (
+              <Skeleton variant="circle" className="sm:hidden h-8 w-8 shrink-0" />
+            )}
+            {!user && mounted && (
+              <button
+                onClick={() => openLoginModal()}
+                className="sm:hidden shrink-0 rounded-md bg-[#00aeec] px-3 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+              >
+                Đăng nhập
+              </button>
+            )}
           </div>
 
           <nav className="hidden shrink-0 items-center gap-x-1 lg:flex">
-            {RIGHT_ACTIONS.map(({ label, href, icon: Icon }) => (
+            {RIGHT_ACTIONS.map(({ label, href, icon: Icon, comingSoon }) => (
               <Link
                 key={href}
                 href={href}
-                className={cn(
-                  'hover:bg-accent/20 flex flex-col items-center gap-y-2 rounded-md px-3 py-1 transition-colors',
-                  isHome
-                    ? 'text-white hover:text-white'
-                    : 'text-muted-foreground hover:text-accent-foreground',
-                )}
+                className="relative text-muted-foreground hover:text-accent-foreground hover:bg-accent/20 flex flex-col items-center gap-y-2 rounded-md px-3 py-1 transition-colors"
               >
                 <Icon className="h-5 w-5" />
                 <span className="text-[10px] leading-none font-medium">{label}</span>
+                {comingSoon && <ComingSoonBadge />}
               </Link>
             ))}
-            <CollectionDropdown isHome={isHome} />
+            <CollectionDropdown />
           </nav>
         </div>
       </header>
-
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>
   );
 }
@@ -122,7 +124,7 @@ const COLLECTION_TABS = [
 
 type CollectionTabId = (typeof COLLECTION_TABS)[number]['id'];
 
-function CollectionDropdown({ isHome }: { isHome: boolean }) {
+function CollectionDropdown() {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<CollectionTabId>('default');
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -144,12 +146,7 @@ function CollectionDropdown({ isHome }: { isHome: boolean }) {
   return (
     <div className="relative shrink-0" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
       <button
-        className={cn(
-          'hover:bg-accent/20 flex flex-col items-center gap-y-2 rounded-md px-3 py-1 transition-colors',
-          isHome
-            ? 'text-white/80 hover:text-white'
-            : 'text-muted-foreground hover:text-accent-foreground',
-        )}
+        className="text-muted-foreground hover:text-accent-foreground hover:bg-accent/20 flex flex-col items-center gap-y-2 rounded-md px-3 py-1 transition-colors"
       >
         <Bookmark className="h-5 w-5" />
         <span className="text-[10px] leading-none font-medium">Bộ sưu tập</span>
@@ -313,15 +310,18 @@ function UserMenu({ user }: { user: User }) {
             ))}
           </div>
           <div className="py-2">
-            {MENU_ITEMS.map(({ label, href }) => (
+            {MENU_ITEMS.map(({ label, href, comingSoon }) => (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="hover:bg-accent flex items-center justify-between px-5 py-3.5 text-sm transition-colors"
+                className="relative hover:bg-accent flex items-center justify-between px-5 py-3.5 text-sm transition-colors"
               >
                 {label}
-                <ChevronRight className="text-muted-foreground h-4 w-4" />
+                <div className="flex items-center gap-2">
+                  {comingSoon && <ComingSoonBadge />}
+                  <ChevronRight className="text-muted-foreground h-4 w-4" />
+                </div>
               </Link>
             ))}
           </div>
@@ -413,15 +413,18 @@ function UserMenu({ user }: { user: User }) {
           </div>
 
           <div className="py-2">
-            {MENU_ITEMS.map(({ label, href }) => (
+            {MENU_ITEMS.map(({ label, href, comingSoon }) => (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="hover:bg-accent flex items-center justify-between px-5 py-4 text-sm transition-colors"
+                className="relative hover:bg-accent flex items-center justify-between px-5 py-4 text-sm transition-colors"
               >
                 {label}
-                <ChevronRight className="text-muted-foreground h-4 w-4" />
+                <div className="flex items-center gap-2">
+                  {comingSoon && <ComingSoonBadge />}
+                  <ChevronRight className="text-muted-foreground h-4 w-4" />
+                </div>
               </Link>
             ))}
           </div>

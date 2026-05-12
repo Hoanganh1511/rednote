@@ -17,10 +17,9 @@ export function Modal({ open, onClose, children, className }: ModalProps) {
   useEffect(() => {
     if (open) {
       setRendered(true);
-      const raf = requestAnimationFrame(() =>
-        requestAnimationFrame(() => setVisible(true)),
-      );
-      return () => cancelAnimationFrame(raf);
+      // Use setTimeout instead of requestAnimationFrame for better reliability
+      const t = setTimeout(() => setVisible(true), 10);
+      return () => clearTimeout(t);
     } else {
       setVisible(false);
       const t = setTimeout(() => setRendered(false), 300);
@@ -45,7 +44,7 @@ export function Modal({ open, onClose, children, className }: ModalProps) {
   return (
     <div
       className={cn(
-        'fixed inset-0 z-modal flex items-center justify-center p-4',
+        'fixed inset-0 z-toast flex items-center justify-center p-4',
         'transition-opacity duration-300',
         visible ? 'opacity-100' : 'pointer-events-none opacity-0',
       )}
@@ -56,7 +55,7 @@ export function Modal({ open, onClose, children, className }: ModalProps) {
       {/* Panel */}
       <div
         className={cn(
-          'relative z-above w-full max-w-sm sm:max-w-md rounded-xl bg-background shadow-2xl',
+          'relative w-full max-w-sm sm:max-w-md rounded-xl bg-background shadow-2xl',
           'max-h-[90vh] overflow-y-auto',
           'transition-all duration-300',
           visible ? 'translate-y-0 scale-100' : 'translate-y-3 scale-95',

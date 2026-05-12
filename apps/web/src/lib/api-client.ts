@@ -1,5 +1,10 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { API_BASE_URL } from '@/constants';
+import axios, {
+  AxiosHeaders,
+  type AxiosError,
+  type InternalAxiosRequestConfig,
+} from 'axios';
+
+const CLIENT_API_BASE = '/proxy-api';
 
 interface ApiEnvelope<T = unknown> {
   data: T;
@@ -17,7 +22,7 @@ interface RetryableConfig extends InternalAxiosRequestConfig {
 }
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: CLIENT_API_BASE,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
@@ -66,7 +71,7 @@ apiClient.interceptors.response.use(
 
         // Use raw axios (not apiClient) to avoid interceptor loop
         const refreshRes = await axios.post<ApiEnvelope<{ accessToken: string; refreshToken: string }>>(
-          `${API_BASE_URL}/auth/refresh`,
+          `${CLIENT_API_BASE}/auth/refresh`,
           { refreshToken },
         );
 
@@ -77,8 +82,9 @@ apiClient.interceptors.response.use(
         useUserStore.getState().setTokens(tokens);
 
         // Retry original request with new token
-        original.headers ??= {};
-        original.headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+        const headers = AxiosHeaders.from(original.headers ?? {});
+        headers.set('Authorization', `Bearer ${tokens.accessToken}`);
+        original.headers = headers;
         return apiClient(original);
       } catch {
         const { useUserStore } = await import('@/stores/user-store');

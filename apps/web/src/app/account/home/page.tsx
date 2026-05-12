@@ -1,12 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Crown, Coins, LogIn, PlayCircle, ThumbsUp, Share2, Trophy,
-  ChevronRight, Upload,
+  ChevronRight, Upload, LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/hooks/use-auth';
+import { useUserStore } from '@/stores/user-store';
+import { apiClient } from '@/lib/api-client';
 import { AccountNavCards } from '@/components/layout/account-sidebar';
 
 const DAILY_TASKS = [
@@ -21,6 +25,20 @@ export default function AccountHomePage() {
   const user = useCurrentUser();
   const displayName = user?.displayName ?? user?.username ?? 'Người dùng';
   const avatarLetter = displayName[0]?.toUpperCase() ?? 'U';
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const router = useRouter();
+  const logout = useUserStore((s) => s.logout);
+
+  const handleLogout = async () => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch {
+      /* ignore */
+    }
+    logout();
+    setShowLogoutConfirm(false);
+    router.push('/');
+  };
 
   return (
     <div>
@@ -80,6 +98,15 @@ export default function AccountHomePage() {
 
         {/* Account nav grid */}
         <AccountNavCards />
+
+        {/* Logout button */}
+        <button
+          onClick={() => setShowLogoutConfirm(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-100"
+        >
+          <LogOut className="h-4 w-4" />
+          Đăng xuất
+        </button>
 
         {/* VIP banner */}
         <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#00aeec] to-[#007ab8] p-4 text-white shadow-sm">
@@ -237,7 +264,44 @@ export default function AccountHomePage() {
             </button>
           </div>
         </div>
+
+        {/* Logout button */}
+        <button
+          onClick={() => setShowLogoutConfirm(true)}
+          className="flex items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-100"
+        >
+          <LogOut className="h-4 w-4" />
+          Đăng xuất
+        </button>
       </div>
+
+      {/* Logout confirmation dialog */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-background rounded-2xl shadow-lg max-w-sm w-full">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold mb-2">Xác nhận đăng xuất</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

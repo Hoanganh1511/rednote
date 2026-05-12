@@ -48,7 +48,7 @@ export function Dialog({
   const isSplit = leftBtns.length > 0 && rightBtns.length > 0;
 
   return (
-    <Modal open={open} onClose={onClose} className={className}>
+    <Modal open={open} onClose={onClose} {...(className !== undefined ? { className } : {})}>
       {/* Header: title centered + X absolute right */}
       <div className="relative flex items-center justify-center border-b border-border/60 px-10 py-3.5">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>

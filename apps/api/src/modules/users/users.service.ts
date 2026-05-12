@@ -27,6 +27,12 @@ export class UsersService {
     return this.userRepo.findOne({ where: { username } });
   }
 
+  async findByUsernamePublic(username: string): Promise<UserEntity> {
+    const user = await this.userRepo.findOne({ where: { username } });
+    if (!user) throw new NotFoundException('User không tồn tại');
+    return user;
+  }
+
   async findByPhone(phoneNumber: string): Promise<UserEntity | null> {
     return this.userRepo.findOne({ where: { phoneNumber } });
   }

@@ -108,12 +108,12 @@ export function SearchDropdown() {
       {rendered && (
         <div
           className={cn(
-            'fixed inset-0 z-modal bg-background flex flex-col transition-all duration-300',
+            'fixed inset-0 z-modal bg-background flex flex-col transition-all duration-300 pt-[max(0,env(safe-area-inset-top))]',
             visible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full',
           )}
         >
           {/* Header */}
-          <div className="border-border flex items-center gap-3 h-16 px-4 border-b shrink-0">
+          <div className="border-border flex items-center gap-3 h-16 px-4 border-b shrink-0 sm:px-6">
             <button
               onClick={handleClose}
               className="text-muted-foreground hover:text-foreground transition-colors"

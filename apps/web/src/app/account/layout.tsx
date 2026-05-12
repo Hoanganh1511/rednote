@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import { SITE_MAIN_CONTENT_CLASS } from '@/constants';
+import { cn } from '@/lib/utils';
 import { AccountHeader } from '@/components/layout/account-header';
 import { AccountSidebar } from '@/components/layout/account-sidebar';
 import { MobileNav } from '@/components/layout/mobile-nav';
@@ -23,7 +25,9 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
       <div className="hidden h-[120px] w-full bg-[#00aeec] md:block" />
 
       {/* Body */}
-      <div className="mx-auto flex w-full max-w-screen-xl flex-1 gap-0 px-4 py-6 pb-24 md:py-8 md:pb-8">
+      <div
+        className={cn(SITE_MAIN_CONTENT_CLASS, 'flex flex-1 gap-0 px-4 py-6 pb-24 sm:px-5 md:py-8 md:pb-8 lg:px-6')}
+      >
         <AccountSidebar />
         <main className="min-w-0 flex-1 md:pl-8">
 

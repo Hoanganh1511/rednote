@@ -23,9 +23,21 @@ export const useUserStore = create<UserState>()(
       refreshToken: null,
       justLoggedIn: false,
       setUser: (user) => set({ user }),
-      setTokens: ({ accessToken, refreshToken }) => set({ accessToken, refreshToken }),
+      setTokens: ({ accessToken, refreshToken }) => {
+        if (typeof document !== 'undefined') {
+          document.cookie = `accessToken=${accessToken}; path=/`;
+          document.cookie = `refreshToken=${refreshToken}; path=/`;
+        }
+        set({ accessToken, refreshToken });
+      },
       setJustLoggedIn: (justLoggedIn) => set({ justLoggedIn }),
-      logout: () => set({ user: null, accessToken: null, refreshToken: null }),
+      logout: () => {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'accessToken=; path=/; max-age=0';
+          document.cookie = 'refreshToken=; path=/; max-age=0';
+        }
+        set({ user: null, accessToken: null, refreshToken: null });
+      },
     }),
     {
       name: 'rednote-user',

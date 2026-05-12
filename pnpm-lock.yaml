@@ -201,9 +201,6 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.62.16
         version: 5.100.9(react@19.2.6)
-      '@tanstack/react-query-devtools':
-        specifier: ^5.62.16
-        version: 5.100.9(@tanstack/react-query@5.100.9(react@19.2.6))(react@19.2.6)
       '@vidstack/react':
         specifier: ^1.12.11
         version: 1.12.13(@types/react@19.2.14)(react@19.2.6)
@@ -243,6 +240,9 @@ importers:
       react-hook-form:
         specifier: ^7.54.2
         version: 7.75.0(react@19.2.6)
+      react-icons:
+        specifier: ^5.6.0
+        version: 5.6.0(react@19.2.6)
       shared-types:
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -1947,15 +1947,6 @@ packages:
 
   '@tanstack/query-core@5.100.9':
     resolution: {integrity: sha512-SJSFw1S8+kQ0+knv/XGfrbocWoAlT7vDKsSImtLx3ZPQmEcR46hkDjLSvynSy25N8Ms4tIEini1FuBd5k7IscQ==}
-
-  '@tanstack/query-devtools@5.100.9':
-    resolution: {integrity: sha512-gqiptrTIhbK2PuCaPRHmWXfJG1NGYVFpAr0HqogEqiSBNB5xDz6fmesQt7w4WgMOqOQPnPHJ3ZDMuhDaXvNO8g==}
-
-  '@tanstack/react-query-devtools@5.100.9':
-    resolution: {integrity: sha512-mM3slaVGXJmz+pOLgXdANj75ikgQCyudyl3kmFvm6brI1JyVeY/+IeD17uDHIvZrD8hfoO2sdZ54RFsHdYAuhA==}
-    peerDependencies:
-      '@tanstack/react-query': ^5.100.9
-      react: ^18 || ^19
 
   '@tanstack/react-query@5.100.9':
     resolution: {integrity: sha512-Oa44XkaI3kCNN6ME0KByU3xT3SEUNOMfZpHxL6+wFoTm+OeUFYHKdeYVe0aOXlRDm/f15sgLwEt2HDorIdW8+A==}
@@ -4761,6 +4752,11 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
+
+  react-icons@5.6.0:
+    resolution: {integrity: sha512-RH93p5ki6LfOiIt0UtDyNg/cee+HLVR6cHHtW3wALfo+eOHTp8RnU2kRkI6E+H19zMIs03DyxUG/GfZMOGvmiA==}
+    peerDependencies:
+      react: '*'
 
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
@@ -7911,14 +7907,6 @@ snapshots:
       tslib: 2.8.1
 
   '@tanstack/query-core@5.100.9': {}
-
-  '@tanstack/query-devtools@5.100.9': {}
-
-  '@tanstack/react-query-devtools@5.100.9(@tanstack/react-query@5.100.9(react@19.2.6))(react@19.2.6)':
-    dependencies:
-      '@tanstack/query-devtools': 5.100.9
-      '@tanstack/react-query': 5.100.9(react@19.2.6)
-      react: 19.2.6
 
   '@tanstack/react-query@5.100.9(react@19.2.6)':
     dependencies:
@@ -11141,6 +11129,10 @@ snapshots:
       scheduler: 0.27.0
 
   react-hook-form@7.75.0(react@19.2.6):
+    dependencies:
+      react: 19.2.6
+
+  react-icons@5.6.0(react@19.2.6):
     dependencies:
       react: 19.2.6
 
