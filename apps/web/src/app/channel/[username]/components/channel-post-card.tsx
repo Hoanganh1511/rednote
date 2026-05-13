@@ -17,9 +17,10 @@ import { formatRelativeTimeVi } from '@/lib/format-relative-time-vi';
 
 interface ChannelPostCardProps {
   post: PostFeedItem;
+  onPostLikeChange?: () => void; // Callback to refetch author stats when post is liked
 }
 
-export function ChannelPostCard({ post }: ChannelPostCardProps) {
+export function ChannelPostCard({ post, onPostLikeChange }: ChannelPostCardProps) {
   const accessToken = useUserStore((s) => s.accessToken);
   const currentUser = useUserStore((s) => s.user);
   const openDrawer = usePostDetailDrawerStore((s) => s.openDrawer);
@@ -121,6 +122,10 @@ export function ChannelPostCard({ post }: ChannelPostCardProps) {
               onSuccess: (data) => {
                 setLikedByMe(data.liked);
                 setLikeCount(data.likeCount);
+                // Notify parent to refetch author data (totalLikesReceived)
+                setTimeout(() => {
+                  onPostLikeChange?.();
+                }, 100);
               },
               onError: (err: unknown) => {
                 const status = (err as { response?: { status?: number } })?.response?.status;

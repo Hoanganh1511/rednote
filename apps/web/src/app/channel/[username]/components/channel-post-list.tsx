@@ -8,9 +8,10 @@ import { ChannelPostCard } from './channel-post-card';
 interface ChannelPostListProps {
   userId: string;
   initialPosts: PostFeedPage;
+  onAuthorStatsChange?: () => void; // Callback when post likes change
 }
 
-export function ChannelPostList({ userId, initialPosts }: ChannelPostListProps) {
+export function ChannelPostList({ userId, initialPosts, onAuthorStatsChange }: ChannelPostListProps) {
   const [items, setItems] = useState<PostFeedItem[]>(initialPosts.items);
   const [total, setTotal] = useState(initialPosts.total);
   const [page, setPage] = useState(1);
@@ -68,7 +69,11 @@ export function ChannelPostList({ userId, initialPosts }: ChannelPostListProps) 
     <div>
       <div>
         {items.map((post) => (
-          <ChannelPostCard key={post.id} post={post} />
+          <ChannelPostCard
+            key={post.id}
+            post={post}
+            {...(onAuthorStatsChange && { onPostLikeChange: onAuthorStatsChange })}
+          />
         ))}
       </div>
 

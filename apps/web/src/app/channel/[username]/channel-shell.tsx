@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Zap } from 'lucide-react';
 import type { User, PostFeedPage } from 'shared-types';
 import { Dialog } from '@/components/ui/dialog';
+import { apiClient } from '@/lib/api-client';
 import { ChannelHeader } from './components/channel-header';
 import { ChannelCover } from './components/channel-cover';
 import { ChannelUserInfo } from './components/channel-user-info';
@@ -28,6 +29,16 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [openStatsDrawer, setOpenStatsDrawer] = useState(false);
   const [profileData, setProfileData] = useState<User>(profile);
+
+  // Refetch user data from server to keep stats in sync
+  const refetchUserData = useCallback(async () => {
+    try {
+      const response = await apiClient.get<User>(`/users/${profile.id}`);
+      setProfileData(response.data);
+    } catch {
+      // Silent fail - keep current state
+    }
+  }, [profile.id]);
 
   const handleMainScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     setScrollY(e.currentTarget.scrollTop);
@@ -117,7 +128,11 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
 
         {/* Posts */}
         <div className="mx-auto max-w-2xl px-4 pb-6">
-          <ChannelPostList userId={profileData.id} initialPosts={initialPosts} />
+          <ChannelPostList
+            userId={profileData.id}
+            initialPosts={initialPosts}
+            onAuthorStatsChange={refetchUserData}
+          />
         </div>
       </main>
 
