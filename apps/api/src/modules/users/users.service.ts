@@ -223,9 +223,11 @@ export class UsersService {
   }
 
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {
+    console.log('🔍 isFollowing query:', { followerId, followingId });
     const follow = await this.followRepo.findOne({
       where: { followerId, followingId, deletedAt: IsNull() },
     });
+    console.log('🔍 isFollowing result:', follow ? 'found' : 'not found', follow);
     return !!follow;
   }
 }
