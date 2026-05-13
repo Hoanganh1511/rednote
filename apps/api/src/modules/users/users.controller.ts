@@ -45,6 +45,7 @@ export class UsersController {
     @CurrentUser() user: UserEntity,
     @Param('id') followingId: string,
   ): Promise<{ isFollowing: boolean }> {
+    console.log('🔵 Follow endpoint reached', { userId: user?.id, followingId });
     await this.usersService.follow(user.id, followingId);
     return { isFollowing: true };
   }
@@ -55,6 +56,7 @@ export class UsersController {
     @CurrentUser() user: UserEntity,
     @Param('id') followingId: string,
   ): Promise<{ isFollowing: boolean }> {
+    console.log('🔴 Unfollow endpoint reached', { userId: user?.id, followingId });
     await this.usersService.unfollow(user.id, followingId);
     return { isFollowing: false };
   }
@@ -66,6 +68,7 @@ export class UsersController {
     @CurrentUser() user: UserEntity | null,
     @Param('id') followingId: string,
   ): Promise<{ isFollowing: boolean }> {
+    console.log('🟢 Is-following endpoint reached', { userId: user?.id, followingId });
     if (!user) return { isFollowing: false };
     const isFollowing = await this.usersService.isFollowing(user.id, followingId);
     return { isFollowing };
