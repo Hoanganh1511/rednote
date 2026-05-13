@@ -1,3 +1,6 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { ChevronLeft, Search, MessageCircle, MoreVertical } from 'lucide-react';
 import type { User } from 'shared-types';
 import { cn } from '@/lib/utils';
@@ -11,6 +14,7 @@ interface ChannelHeaderProps {
 const HEADER_THRESHOLD = 180;
 
 export function ChannelHeader({ user, scrollY, onMessageClick }: ChannelHeaderProps) {
+  const router = useRouter();
   const isSolid = scrollY > HEADER_THRESHOLD;
 
   const btnClass = cn(
@@ -27,7 +31,12 @@ export function ChannelHeader({ user, scrollY, onMessageClick }: ChannelHeaderPr
         isSolid ? 'bg-background shadow-sm' : 'bg-transparent',
       )}
     >
-      <button type="button" className={btnClass} aria-label="Quay lại">
+      <button
+        type="button"
+        className={btnClass}
+        onClick={() => router.back()}
+        aria-label="Quay lại"
+      >
         <ChevronLeft className="h-5 w-5" />
       </button>
 
