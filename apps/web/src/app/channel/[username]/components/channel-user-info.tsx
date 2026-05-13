@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { MessageCircle, Menu } from 'lucide-react';
 import type { User } from 'shared-types';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
@@ -19,9 +20,9 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
   const currentUser = useCurrentUser();
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
   const [openStatPopup, setOpenStatPopup] = useState<'followers' | 'following' | 'likes' | null>(null);
   const [followerCount, setFollowerCount] = useState(user.followerCount);
+  const [showFollowingOptions, setShowFollowingOptions] = useState(false);
   const displayName = user.displayName || user.username;
 
   // Check if current user is following this user and sync follower count
@@ -43,7 +44,7 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
   const handleFollowClick = async () => {
     if (!currentUser) return;
     if (isFollowing) {
-      setShowUnfollowConfirm(true);
+      setShowFollowingOptions(true);
       return;
     }
     await performFollow();
@@ -64,7 +65,7 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
       // Handle error silently
     } finally {
       setIsLoading(false);
-      setShowUnfollowConfirm(false);
+      setShowFollowingOptions(false);
     }
   };
 
@@ -123,46 +124,76 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
             </button>
           </div>
 
-          {/* Follow button */}
+          {/* Follow & Message buttons */}
           {currentUser && currentUser.id !== user.id ? (
-            <button
-              onClick={handleFollowClick}
-              disabled={isLoading}
-              className={`w-full rounded py-1.5 text-xs font-semibold transition-colors active:opacity-80 disabled:opacity-50 ${
-                isFollowing
-                  ? 'border border-border text-foreground hover:bg-accent'
-                  : 'bg-[#00aeec] text-white hover:bg-[#00aeec]/90'
-              }`}
-            >
-              {isFollowing ? '✓ Following' : '+ Follow'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleFollowClick}
+                disabled={isLoading}
+                className={`flex-1 rounded py-1.5 text-xs font-semibold transition-colors active:opacity-80 disabled:opacity-50 ${
+                  isFollowing
+                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-[#00aeec] text-white hover:bg-[#00aeec]/90'
+                }`}
+              >
+                {isFollowing ? (
+                  <Menu className="w-4 h-4 inline mr-1" />
+                ) : (
+                  '+'
+                )}
+                {isFollowing ? '' : ' Follow'}
+              </button>
+              {isFollowing && (
+                <button
+                  onClick={() => {}}
+                  className="rounded py-1.5 px-3 text-xs font-semibold transition-colors active:opacity-80 hover:bg-gray-100 border border-border"
+                  title="Gửi tin nhắn"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           ) : null}
         </div>
       </div>
 
-      {/* Unfollow confirmation dialog */}
-      {showUnfollowConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-background rounded-lg border border-border p-6 shadow-lg max-w-sm mx-4">
-            <h2 className="text-base font-semibold text-foreground mb-2">
-              Hủy theo dõi {displayName}?
-            </h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              Bạn sẽ không thể nhìn thấy các bài đăng mới từ người này trong luồng của bạn.
-            </p>
-            <div className="flex gap-3">
+      {/* Following options bottom sheet drawer */}
+      {showFollowingOptions && (
+        <div className="fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 transition-opacity"
+            onClick={() => setShowFollowingOptions(false)}
+          />
+
+          {/* Bottom sheet */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-lg border border-b-0 border-border shadow-lg animate-in slide-in-from-bottom-5 duration-300">
+            <div className="px-[15px] py-4">
+              {/* Option: Special Follow */}
               <button
-                onClick={() => setShowUnfollowConfirm(false)}
-                className="flex-1 px-4 py-2 rounded border border-border text-foreground hover:bg-accent transition-colors text-sm font-medium"
+                onClick={() => {}}
+                className="w-full text-left py-[6px] text-sm text-foreground hover:opacity-70 transition-opacity"
               >
-                Huỷ
+                Thêm người này vào danh sách Special Follow
               </button>
+              <div className="h-px bg-border my-0" />
+
+              {/* Option: Unfollow */}
               <button
                 onClick={performFollow}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors text-sm font-medium"
+                className="w-full text-left py-[6px] text-sm text-red-600 hover:opacity-70 disabled:opacity-50 transition-opacity"
               >
-                {isLoading ? 'Đang hủy...' : 'Hủy theo dõi'}
+                {isLoading ? 'Đang hủy...' : 'Unfollow'}
+              </button>
+              <div className="h-px bg-border my-0" />
+
+              {/* Cancel button */}
+              <button
+                onClick={() => setShowFollowingOptions(false)}
+                className="w-full text-center py-[6px] text-sm text-foreground hover:opacity-70 transition-opacity font-medium"
+              >
+                Cancel
               </button>
             </div>
           </div>
