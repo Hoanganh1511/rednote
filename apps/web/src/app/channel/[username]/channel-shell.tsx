@@ -19,6 +19,8 @@ interface ChannelShellProps {
 export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
   const [scrollY, setScrollY] = useState(0);
   const [messageDrawerOpen, setMessageDrawerOpen] = useState(false);
+  const [followingOptionsOpen, setFollowingOptionsOpen] = useState(false);
+  const [isUnfollowing, setIsUnfollowing] = useState(false);
 
   const handleMainScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     setScrollY(e.currentTarget.scrollTop);
@@ -38,6 +40,14 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
     return () => document.removeEventListener('keydown', onKey);
   }, [messageDrawerOpen]);
 
+  useEffect(() => {
+    const handleUnfollowComplete = () => {
+      setIsUnfollowing(false);
+    };
+    window.addEventListener('unfollowComplete', handleUnfollowComplete as EventListener);
+    return () => window.removeEventListener('unfollowComplete', handleUnfollowComplete as EventListener);
+  }, []);
+
   return (
     <div className="relative w-full">
       <main
@@ -50,7 +60,13 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
 
         {/* Profile content */}
         <div className="mx-auto max-w-2xl px-4 pb-32">
-          <ChannelUserInfo user={profile} />
+          <ChannelUserInfo
+            user={profile}
+            onFollowingOptionsOpen={() => setFollowingOptionsOpen(true)}
+            onFollowingOptionsClose={() => setFollowingOptionsOpen(false)}
+            onUnfollowStart={() => setIsUnfollowing(true)}
+            onUnfollowEnd={() => setIsUnfollowing(false)}
+          />
           <ChannelBio user={profile} />
 
           {/* Power Up bar */}
@@ -77,6 +93,53 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
         onClose={() => setMessageDrawerOpen(false)}
         userDisplayName={profile.displayName || profile.username}
       />
+
+      {/* Following options bottom sheet drawer — rendered at viewport level */}
+      {followingOptionsOpen && (
+        <div className="fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 transition-opacity"
+            onClick={() => setFollowingOptionsOpen(false)}
+          />
+
+          {/* Bottom sheet */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-lg border border-b-0 border-border shadow-lg animate-in slide-in-from-bottom-5 duration-300">
+            <div className="px-[15px] py-4">
+              {/* Option: Special Follow */}
+              <button
+                onClick={() => {}}
+                className="w-full text-left py-[6px] text-sm text-foreground hover:opacity-70 transition-opacity"
+              >
+                Thêm người này vào danh sách Special Follow
+              </button>
+              <div className="h-px bg-border my-0" />
+
+              {/* Option: Unfollow - calls parent handler */}
+              <button
+                onClick={() => {
+                  setIsUnfollowing(true);
+                  // Dispatch custom event that ChannelUserInfo listens to
+                  window.dispatchEvent(new CustomEvent('performUnfollow'));
+                }}
+                disabled={isUnfollowing}
+                className="w-full text-left py-[6px] text-sm text-red-600 hover:opacity-70 disabled:opacity-50 transition-opacity"
+              >
+                {isUnfollowing ? 'Đang hủy...' : 'Unfollow'}
+              </button>
+              <div className="h-px bg-border my-0" />
+
+              {/* Cancel button */}
+              <button
+                onClick={() => setFollowingOptionsOpen(false)}
+                className="w-full text-center py-[6px] text-sm text-foreground hover:opacity-70 transition-opacity font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -8,6 +8,10 @@ import { apiClient } from '@/lib/api-client';
 
 interface ChannelUserInfoProps {
   user: User;
+  onFollowingOptionsOpen?: () => void;
+  onFollowingOptionsClose?: () => void;
+  onUnfollowStart?: () => void;
+  onUnfollowEnd?: () => void;
 }
 
 function formatCount(n: number): string {
@@ -16,13 +20,18 @@ function formatCount(n: number): string {
   return String(n);
 }
 
-export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
+export function ChannelUserInfo({
+  user,
+  onFollowingOptionsOpen,
+  onFollowingOptionsClose,
+  onUnfollowStart,
+  onUnfollowEnd,
+}: ChannelUserInfoProps) {
   const currentUser = useCurrentUser();
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [openStatPopup, setOpenStatPopup] = useState<'followers' | 'following' | 'likes' | null>(null);
   const [followerCount, setFollowerCount] = useState(user.followerCount);
-  const [showFollowingOptions, setShowFollowingOptions] = useState(false);
   const displayName = user.displayName || user.username;
 
   // Check if current user is following this user and sync follower count
@@ -41,10 +50,19 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
     }
   }, [currentUser, user.id, user.followerCount]);
 
+  // Listen for unfollow event from parent
+  useEffect(() => {
+    const handlePerformUnfollow = async () => {
+      await performFollow();
+    };
+    window.addEventListener('performUnfollow', handlePerformUnfollow as EventListener);
+    return () => window.removeEventListener('performUnfollow', handlePerformUnfollow as EventListener);
+  }, [isFollowing]);
+
   const handleFollowClick = async () => {
     if (!currentUser) return;
     if (isFollowing) {
-      setShowFollowingOptions(true);
+      onFollowingOptionsOpen?.();
       return;
     }
     await performFollow();
@@ -52,6 +70,7 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
 
   const performFollow = async () => {
     setIsLoading(true);
+    onUnfollowStart?.();
     try {
       if (isFollowing) {
         await apiClient.delete(`/users/${user.id}/follow`);
@@ -65,7 +84,10 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
       // Handle error silently
     } finally {
       setIsLoading(false);
-      setShowFollowingOptions(false);
+      onUnfollowEnd?.();
+      onFollowingOptionsClose?.();
+      // Notify parent that unfollow is complete
+      window.dispatchEvent(new CustomEvent('unfollowComplete'));
     }
   };
 
@@ -158,49 +180,6 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
           ) : null}
         </div>
       </div>
-
-      {/* Following options bottom sheet drawer */}
-      {showFollowingOptions && (
-        <div className="fixed inset-0 z-50">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 transition-opacity"
-            onClick={() => setShowFollowingOptions(false)}
-          />
-
-          {/* Bottom sheet */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-lg border border-b-0 border-border shadow-lg animate-in slide-in-from-bottom-5 duration-300">
-            <div className="px-[15px] py-4">
-              {/* Option: Special Follow */}
-              <button
-                onClick={() => {}}
-                className="w-full text-left py-[6px] text-sm text-foreground hover:opacity-70 transition-opacity"
-              >
-                Thêm người này vào danh sách Special Follow
-              </button>
-              <div className="h-px bg-border my-0" />
-
-              {/* Option: Unfollow */}
-              <button
-                onClick={performFollow}
-                disabled={isLoading}
-                className="w-full text-left py-[6px] text-sm text-red-600 hover:opacity-70 disabled:opacity-50 transition-opacity"
-              >
-                {isLoading ? 'Đang hủy...' : 'Unfollow'}
-              </button>
-              <div className="h-px bg-border my-0" />
-
-              {/* Cancel button */}
-              <button
-                onClick={() => setShowFollowingOptions(false)}
-                className="w-full text-center py-[6px] text-sm text-foreground hover:opacity-70 transition-opacity font-medium"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Stats popup modal */}
       {openStatPopup && (
