@@ -130,18 +130,20 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
               <button
                 onClick={handleFollowClick}
                 disabled={isLoading}
-                className={`flex-1 rounded py-1.5 text-xs font-semibold transition-colors active:opacity-80 disabled:opacity-50 ${
+                className={`flex-1 rounded py-1.5 text-xs font-semibold transition-colors active:opacity-80 disabled:opacity-50 flex items-center justify-center gap-1.5 ${
                   isFollowing
                     ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     : 'bg-[#00aeec] text-white hover:bg-[#00aeec]/90'
                 }`}
               >
                 {isFollowing ? (
-                  <Menu className="w-4 h-4 inline mr-1" />
+                  <>
+                    <Menu className="w-4 h-4" />
+                    Đang theo dõi
+                  </>
                 ) : (
-                  '+'
+                  <>+ Follow</>
                 )}
-                {isFollowing ? '' : ' Follow'}
               </button>
               {isFollowing && (
                 <button
