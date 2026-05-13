@@ -21,10 +21,12 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
   const [openStatPopup, setOpenStatPopup] = useState<'followers' | 'following' | 'likes' | null>(null);
+  const [followerCount, setFollowerCount] = useState(user.followerCount);
   const displayName = user.displayName || user.username;
 
-  // Check if current user is following this user
+  // Check if current user is following this user and sync follower count
   useEffect(() => {
+    setFollowerCount(user.followerCount);
     if (currentUser && currentUser.id !== user.id) {
       const checkFollowing = async () => {
         try {
@@ -36,7 +38,7 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
       };
       checkFollowing();
     }
-  }, [currentUser, user.id]);
+  }, [currentUser, user.id, user.followerCount]);
 
   const handleFollowClick = async () => {
     if (!currentUser) return;
@@ -52,8 +54,10 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
     try {
       if (isFollowing) {
         await apiClient.delete(`/users/${user.id}/follow`);
+        setFollowerCount((prev) => Math.max(0, prev - 1));
       } else {
         await apiClient.post(`/users/${user.id}/follow`);
+        setFollowerCount((prev) => prev + 1);
       }
       setIsFollowing(!isFollowing);
     } catch {
@@ -93,7 +97,7 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
               className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
             >
               <div className="text-[13px] font-bold leading-tight text-foreground">
-                {formatCount(user.followerCount)}
+                {formatCount(followerCount)}
               </div>
               <div className="text-[9px] text-muted-foreground mt-0.5">Followers</div>
             </button>
