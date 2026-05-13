@@ -27,7 +27,7 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
       const checkFollowing = async () => {
         try {
           const response = await apiClient.get(`/users/${user.id}/is-following`);
-          setIsFollowing(response.data?.data?.isFollowing ?? false);
+          setIsFollowing(response.data?.isFollowing ?? false);
         } catch {
           // Handle error silently
         }
