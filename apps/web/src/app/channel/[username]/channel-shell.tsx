@@ -114,7 +114,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
 
           {/* Bottom sheet */}
           <div className={`fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-lg border border-b-0 border-border shadow-lg transition-all duration-500 ${
-            isFollowingOptionsClosing ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100 animate-in slide-in-from-bottom-5'
+            isFollowingOptionsClosing ? 'translate-y-96 opacity-0' : 'translate-y-0 opacity-100'
           }`}>
             <div className="px-[15px] py-4">
               {/* Option: Special Follow */}
