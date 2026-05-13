@@ -15,10 +15,10 @@ export function ChannelBio({ user }: ChannelBioProps) {
   const isLong = !!bio && (bio.split('\n').length > 2 || bio.length > 120);
 
   return (
-    <div className="mt-3 mb-4 space-y-2">
+    <div className="mt-[22px] mb-4 space-y-2">
       {/* Display name + level badge */}
       <div className="flex items-center gap-2 flex-wrap">
-        <h1 className="text-xl font-bold leading-tight text-foreground">{displayName}</h1>
+        <h1 className="text-base font-medium leading-tight text-foreground">{displayName}</h1>
         <span className="rounded bg-[#00aeec] px-1.5 py-0.5 text-[10px] font-bold text-white leading-none">
           LV0
         </span>

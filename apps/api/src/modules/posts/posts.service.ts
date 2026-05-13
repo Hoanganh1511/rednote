@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, In, Repository, DataSource } from 'typeorm';
+import { QueryFailedError, In, IsNull, Repository, DataSource } from 'typeorm';
 import { PostEntity } from './post.entity';
 import { PostLikeEntity } from './post-like.entity';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -15,6 +15,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { ListMyPostsDto } from './dto/list-my-posts.dto';
 import { ListFeedPostsDto } from './dto/list-feed-posts.dto';
 import { UserEntity } from '../users/user.entity';
+import { FollowEntity } from '../users/follow.entity';
 import { POSTS_FEED_PAGE_SIZE } from './posts.constants';
 
 @Injectable()
@@ -26,6 +27,8 @@ export class PostsService {
     private readonly postRepo: Repository<PostEntity>,
     @InjectRepository(PostLikeEntity)
     private readonly postLikeRepo: Repository<PostLikeEntity>,
+    @InjectRepository(FollowEntity)
+    private readonly followRepo: Repository<FollowEntity>,
     private readonly jwtService: JwtService,
     private readonly dataSource: DataSource,
   ) {}
@@ -223,6 +226,31 @@ export class PostsService {
     }
   }
 
+  /** Attach whether viewer is following each post's author. */
+  private async attachFollowingAuthorMeta(items: PostEntity[], viewerUserId: string | null): Promise<void> {
+    if (items.length === 0 || !viewerUserId) {
+      for (const p of items) {
+        (p as PostEntity & { isFollowingAuthor: boolean }).isFollowingAuthor = false;
+      }
+      return;
+    }
+
+    const authorIds = [...new Set(items.map((p) => p.userId))];
+    const followingRows = await this.followRepo.find({
+      where: {
+        followerId: viewerUserId,
+        followingId: In(authorIds),
+        deletedAt: IsNull(),
+      },
+    });
+
+    const followingSet = new Set(followingRows.map((f) => f.followingId));
+
+    for (const p of items) {
+      (p as PostEntity & { isFollowingAuthor: boolean }).isFollowingAuthor = followingSet.has(p.userId);
+    }
+  }
+
   /** Feed trang chủ: bài đã xuất bản, mới nhất trước (`createdAt DESC`), phân trang cố định 6/trang. */
   async getPublishedFeed(
     query: ListFeedPostsDto,
@@ -261,6 +289,7 @@ export class PostsService {
       throw err;
     }
     await this.attachLikeMeta(items, viewerUserId);
+    await this.attachFollowingAuthorMeta(items, viewerUserId);
     this.attachCommentCountMeta(items);
     items.forEach((item) => this.enrichPostWithAuthorAge(item));
     return { items, total };
@@ -304,6 +333,7 @@ export class PostsService {
       throw err;
     }
     await this.attachLikeMeta(items, viewerUserId);
+    await this.attachFollowingAuthorMeta(items, viewerUserId);
     this.attachCommentCountMeta(items);
     items.forEach((item) => this.enrichPostWithAuthorAge(item));
     return { items, total };
@@ -318,6 +348,7 @@ export class PostsService {
       throw new NotFoundException('Post không tồn tại.');
     }
     await this.attachLikeMeta([post], viewerUserId);
+    await this.attachFollowingAuthorMeta([post], viewerUserId);
     this.attachCommentCountMeta([post]);
     this.enrichPostWithAuthorAge(post);
     return post;
@@ -348,30 +379,34 @@ export class PostsService {
       if (existing) {
         await queryRunner.manager.remove(PostLikeEntity, existing);
         // Decrement counters
-        await queryRunner.manager.update(
-          PostEntity,
-          { id: postId },
-          { likeCount: () => 'like_count - 1' },
-        );
-        await queryRunner.manager.update(
-          UserEntity,
-          { id: authorId },
-          { totalLikesReceived: () => 'total_likes_received - 1' },
-        );
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(PostEntity)
+          .set({ likeCount: () => 'like_count - 1' })
+          .where('id = :id', { id: postId })
+          .execute();
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(UserEntity)
+          .set({ totalLikesReceived: () => 'total_likes_received - 1' })
+          .where('id = :id', { id: authorId })
+          .execute();
       } else {
         const like = queryRunner.manager.create(PostLikeEntity, { postId, userId });
         await queryRunner.manager.save(PostLikeEntity, like);
         // Increment counters
-        await queryRunner.manager.update(
-          PostEntity,
-          { id: postId },
-          { likeCount: () => 'like_count + 1' },
-        );
-        await queryRunner.manager.update(
-          UserEntity,
-          { id: authorId },
-          { totalLikesReceived: () => 'total_likes_received + 1' },
-        );
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(PostEntity)
+          .set({ likeCount: () => 'like_count + 1' })
+          .where('id = :id', { id: postId })
+          .execute();
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(UserEntity)
+          .set({ totalLikesReceived: () => 'total_likes_received + 1' })
+          .where('id = :id', { id: authorId })
+          .execute();
       }
 
       await queryRunner.commitTransaction();

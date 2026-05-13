@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, IsNull } from 'typeorm';
 import { UserEntity } from './user.entity';
 import { FollowEntity } from './follow.entity';
+import { PostEntity } from '../posts/post.entity';
 import { UploadService } from '../upload/upload.service';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -18,6 +19,8 @@ export class UsersService {
     private readonly userRepo: Repository<UserEntity>,
     @InjectRepository(FollowEntity)
     private readonly followRepo: Repository<FollowEntity>,
+    @InjectRepository(PostEntity)
+    private readonly postRepo: Repository<PostEntity>,
     private readonly uploadService: UploadService,
     private readonly dataSource: DataSource,
   ) {}
@@ -235,5 +238,44 @@ export class UsersService {
     });
     console.log('🔍 isFollowing result:', follow ? 'found' : 'not found', follow);
     return !!follow;
+  }
+
+  async getFollowers(userId: string): Promise<UserEntity[]> {
+    const follows = await this.followRepo.find({
+      where: {
+        followingId: userId,
+        deletedAt: IsNull(),
+      },
+      relations: ['follower'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return follows.map(f => f.follower);
+  }
+
+  async getFollowing(userId: string): Promise<UserEntity[]> {
+    const follows = await this.followRepo.find({
+      where: {
+        followerId: userId,
+        deletedAt: IsNull(),
+      },
+      relations: ['following'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return follows.map(f => f.following);
+  }
+
+  async syncTotalLikesReceived(userId: string): Promise<number> {
+    const result = await this.postRepo
+      .createQueryBuilder('post')
+      .select('COALESCE(SUM(post.like_count), 0)', 'totalLikes')
+      .where('post.user_id = :userId', { userId })
+      .andWhere('post.status = :status', { status: 'published' })
+      .getRawOne<{ totalLikes: number }>();
+
+    const totalLikes = result?.totalLikes ?? 0;
+    await this.userRepo.update(userId, { totalLikesReceived: totalLikes });
+    return totalLikes;
   }
 }

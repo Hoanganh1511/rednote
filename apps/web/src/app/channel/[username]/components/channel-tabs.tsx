@@ -24,7 +24,7 @@ export function ChannelTabs({ onTabChange }: ChannelTabsProps) {
   };
 
   return (
-    <div className="sticky top-14 z-20 bg-background border-b border-border mb-3">
+    <div className="sticky top-14 bg-background border-b border-border mb-3">
       <div className="flex">
         {TABS.map(({ id, label, disabled }) => (
           <button
@@ -34,15 +34,12 @@ export function ChannelTabs({ onTabChange }: ChannelTabsProps) {
             className={cn(
               'relative flex-1 py-3 text-sm font-medium transition-colors',
               activeTab === id
-                ? 'text-[#00aeec]'
+                ? 'border-b-2 border-[#00aeec] text-foreground'
                 : 'text-muted-foreground hover:text-foreground',
               disabled && 'cursor-not-allowed opacity-40',
             )}
           >
             {label}
-            {activeTab === id && (
-              <span className="absolute bottom-0 left-1/2 h-0.5 w-10 -translate-x-1/2 rounded-full bg-[#00aeec]" />
-            )}
           </button>
         ))}
       </div>

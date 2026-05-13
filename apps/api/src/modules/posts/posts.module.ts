@@ -7,10 +7,11 @@ import { PostsService } from './posts.service';
 import { PostEntity } from './post.entity';
 import { PostLikeEntity } from './post-like.entity';
 import { UserEntity } from '../users/user.entity';
+import { FollowEntity } from '../users/follow.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PostEntity, PostLikeEntity, UserEntity]),
+    TypeOrmModule.forFeature([PostEntity, PostLikeEntity, UserEntity, FollowEntity]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

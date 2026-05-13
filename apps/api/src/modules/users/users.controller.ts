@@ -36,6 +36,7 @@ export class UsersController {
   }
 
   @Get(':id')
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
   @ApiOperation({ summary: 'Get user by ID (public)' })
   async getUser(@Param('id') id: string): Promise<UserEntity> {
     return this.usersService.findById(id);
@@ -72,5 +73,31 @@ export class UsersController {
   ): Promise<{ isFollowing: boolean }> {
     const isFollowing = await this.usersService.isFollowing(user.id, followingId);
     return { isFollowing };
+  }
+
+  @Public()
+  @Get(':id/followers')
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
+  @ApiOperation({ summary: 'Get list of followers for a user (public)' })
+  async getFollowers(@Param('id') userId: string): Promise<{ items: UserEntity[] }> {
+    const followers = await this.usersService.getFollowers(userId);
+    return { items: followers };
+  }
+
+  @Public()
+  @Get(':id/following')
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
+  @ApiOperation({ summary: 'Get list of users that a user is following (public)' })
+  async getFollowing(@Param('id') userId: string): Promise<{ items: UserEntity[] }> {
+    const following = await this.usersService.getFollowing(userId);
+    return { items: following };
+  }
+
+  @Post(':id/sync-likes')
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
+  @ApiOperation({ summary: 'Sync total likes received count (admin only)' })
+  async syncLikes(@Param('id') userId: string): Promise<{ totalLikesReceived: number }> {
+    const totalLikesReceived = await this.usersService.syncTotalLikesReceived(userId);
+    return { totalLikesReceived };
   }
 }

@@ -35,7 +35,7 @@ export function ChannelHeader({ user, scrollY, onMessageClick }: ChannelHeaderPr
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-[90] flex h-14 items-center justify-between px-3 transition-all duration-200',
+        'fixed top-0 left-0 right-0 z-10 flex h-14 items-center justify-between px-3 transition-all duration-200',
         isSolid ? 'bg-background shadow-sm' : 'bg-transparent',
       )}
     >

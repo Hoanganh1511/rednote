@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Bookmark, MessageCircle, MoreVertical, Share2, ThumbsUp } from 'lucide-react';
+import { AlertTriangle, Bookmark, MessageCircle, MoreVertical, Share2, ThumbsUp, UserX } from 'lucide-react';
 import { FaMars, FaVenus } from 'react-icons/fa';
 import { toast } from 'sonner';
 import type { PostFeedItem } from 'shared-types';
@@ -11,6 +11,7 @@ import { ROUTES } from '@/constants';
 import { useTogglePostLike } from '@/hooks/use-toggle-post-like';
 import { usePostDetailDrawerStore } from '@/stores/post-detail-drawer-store';
 import { useUserStore } from '@/stores/user-store';
+import { apiClient } from '@/lib/api-client';
 import {
   HASHTAG_TEXT_CLASS,
   splitForHashtagHighlight,
@@ -58,12 +59,17 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
   const [likeCount, setLikeCount] = useState(post.likeCount ?? 0);
   const [likedByMe, setLikedByMe] = useState(post.likedByMe ?? false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState(post.isFollowingAuthor ?? false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [followDrawerOpen, setFollowDrawerOpen] = useState(false);
+  const [followDrawerIn, setFollowDrawerIn] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLikeCount(post.likeCount ?? 0);
     setLikedByMe(post.likedByMe ?? false);
-  }, [post.id, post.likeCount, post.likedByMe]);
+    setIsFollowingAuthor(post.isFollowingAuthor ?? false);
+  }, [post.id, post.likeCount, post.likedByMe, post.isFollowingAuthor]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -140,11 +146,35 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
           {currentUser?.id !== post.userId && (
             <button
               type="button"
-              onClick={() => toast.message('Theo dõi — sắp có')}
-              className="relative flex items-center justify-center rounded-full bg-[#00A1D6] px-2 py-1 text-[11px] font-semibold text-white transition-opacity hover:opacity-90 active:opacity-80"
+              disabled={isFollowLoading}
+              onClick={async () => {
+                if (!accessToken) {
+                  toast.message('Đăng nhập để theo dõi');
+                  return;
+                }
+                if (isFollowingAuthor) {
+                  setFollowDrawerOpen(true);
+                  requestAnimationFrame(() => setFollowDrawerIn(true));
+                } else {
+                  setIsFollowLoading(true);
+                  try {
+                    await apiClient.post(`/users/${post.userId}/follow`);
+                    setIsFollowingAuthor(true);
+                  } catch {
+                    toast.message('Không thực hiện được. Thử lại sau.');
+                  } finally {
+                    setIsFollowLoading(false);
+                  }
+                }
+              }}
+              className={cn(
+                'flex items-center justify-center rounded-full px-2 py-1 text-[11px] font-semibold transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60',
+                isFollowingAuthor
+                  ? 'bg-gray-100 text-gray-700'
+                  : 'bg-[#00A1D6] text-white'
+              )}
             >
-              Theo dõi
-              <ComingSoonBadge />
+              {isFollowingAuthor ? 'Đang theo dõi' : 'Theo dõi'}
             </button>
           )}
           <div ref={menuRef} className="relative">
@@ -275,6 +305,54 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
           <ComingSoonBadge />
         </button>
       </div>
+
+      {/* Follow drawer */}
+      {followDrawerOpen && (
+        <>
+          <div
+            className={cn(
+              'fixed inset-0 bg-black/50 transition-opacity duration-300 z-[999]',
+              followDrawerIn ? 'opacity-100' : 'opacity-0',
+            )}
+            onClick={() => {
+              setFollowDrawerIn(false);
+              setTimeout(() => setFollowDrawerOpen(false), 300);
+            }}
+          />
+          <div
+            className={cn(
+              'fixed bottom-0 left-0 right-0 bg-background rounded-t-2xl shadow-lg z-[1000] transition-transform duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)]',
+              followDrawerIn ? 'translate-y-0' : 'translate-y-full',
+            )}
+          >
+            <div className="p-4">
+              <button
+                type="button"
+                disabled={isFollowLoading}
+                onClick={async () => {
+                  setIsFollowLoading(true);
+                  try {
+                    await apiClient.delete(`/users/${post.userId}/follow`);
+                    setIsFollowingAuthor(false);
+                    setFollowDrawerIn(false);
+                    setTimeout(() => setFollowDrawerOpen(false), 300);
+                  } catch {
+                    toast.message('Không thực hiện được. Thử lại sau.');
+                  } finally {
+                    setIsFollowLoading(false);
+                  }
+                }}
+                className={cn(
+                  'flex items-center gap-2.5 px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors disabled:opacity-60',
+                )}
+              >
+                <UserX className="h-4 w-4" />
+                <span>Bỏ theo dõi</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </article>
   );
 }

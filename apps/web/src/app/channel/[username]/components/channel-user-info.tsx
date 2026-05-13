@@ -8,6 +8,8 @@ import { apiClient } from '@/lib/api-client';
 
 interface ChannelUserInfoProps {
   user: User;
+  onFollowingChange?: (isFollowing: boolean) => void;
+  onStatsClick?: () => void;
   onFollowingOptionsOpen?: () => void;
   onFollowingOptionsClose?: () => void;
   onUnfollowStart?: () => void;
@@ -22,6 +24,8 @@ function formatCount(n: number): string {
 
 export function ChannelUserInfo({
   user,
+  onFollowingChange,
+  onStatsClick,
   onFollowingOptionsOpen,
   onFollowingOptionsClose,
   onUnfollowStart,
@@ -30,7 +34,6 @@ export function ChannelUserInfo({
   const currentUser = useCurrentUser();
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [openStatPopup, setOpenStatPopup] = useState<'followers' | 'following' | 'likes' | null>(null);
   const [followerCount, setFollowerCount] = useState(user.followerCount);
   const displayName = user.displayName || user.username;
 
@@ -41,14 +44,16 @@ export function ChannelUserInfo({
       const checkFollowing = async () => {
         try {
           const response = await apiClient.get(`/users/${user.id}/is-following`);
-          setIsFollowing(response.data?.isFollowing ?? false);
+          const following = response.data?.isFollowing ?? false;
+          setIsFollowing(following);
+          onFollowingChange?.(following);
         } catch {
           // Handle error silently
         }
       };
       checkFollowing();
     }
-  }, [currentUser, user.id, user.followerCount]);
+  }, [currentUser, user.id, user.followerCount, onFollowingChange]);
 
   // Listen for unfollow event from parent
   useEffect(() => {
@@ -79,7 +84,9 @@ export function ChannelUserInfo({
         await apiClient.post(`/users/${user.id}/follow`);
         setFollowerCount((prev) => prev + 1);
       }
-      setIsFollowing(!isFollowing);
+      const newFollowingState = !isFollowing;
+      setIsFollowing(newFollowingState);
+      onFollowingChange?.(newFollowingState);
     } catch {
       // Handle error silently
     } finally {
@@ -112,37 +119,37 @@ export function ChannelUserInfo({
         </div>
 
         {/* Stats + Follow button — ~half screen width */}
-        <div className="w-[50vw] pt-2 flex flex-col gap-2.5 ml-auto">
+        <div className="w-[50vw] pt-2 flex flex-col gap-2 ml-auto">
           {/* Stats */}
           <div className="flex items-center">
             <button
-              onClick={() => setOpenStatPopup('followers')}
+              onClick={() => onStatsClick?.()}
               className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
             >
-              <div className="text-[13px] font-bold leading-tight text-foreground">
+              <div className="text-[15px] font-medium leading-tight text-foreground">
                 {formatCount(followerCount)}
               </div>
-              <div className="text-[9px] text-muted-foreground mt-0.5">Followers</div>
+              <div className="text-[9px] text-muted-foreground mt-0.5">Người theo dõi</div>
             </button>
             <div className="w-px h-6 bg-border" />
             <button
-              onClick={() => setOpenStatPopup('following')}
+              onClick={() => onStatsClick?.()}
               className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
             >
-              <div className="text-[13px] font-bold leading-tight text-foreground">
+              <div className="text-[15px] font-medium leading-tight text-foreground">
                 {formatCount(user.followingCount)}
               </div>
-              <div className="text-[9px] text-muted-foreground mt-0.5">Following</div>
+              <div className="text-[9px] text-muted-foreground mt-0.5">Đang theo dõi</div>
             </button>
             <div className="w-px h-6 bg-border" />
             <button
-              onClick={() => setOpenStatPopup('likes')}
+              onClick={() => onStatsClick?.()}
               className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
             >
-              <div className="text-[13px] font-bold leading-tight text-foreground">
+              <div className="text-[15px] font-medium leading-tight text-foreground">
                 {formatCount(user.totalLikesReceived)}
               </div>
-              <div className="text-[9px] text-muted-foreground mt-0.5">Likes</div>
+              <div className="text-[9px] text-muted-foreground mt-0.5">Lượt thích</div>
             </button>
           </div>
 
@@ -170,7 +177,7 @@ export function ChannelUserInfo({
               {isFollowing && (
                 <button
                   onClick={() => {}}
-                  className="rounded py-1.5 px-3 text-xs font-semibold transition-colors active:opacity-80 hover:bg-gray-100 border border-border"
+                  className="rounded py-1.5 px-3 text-xs font-semibold bg-gray-100 text-gray-700 transition-colors active:opacity-80 hover:bg-gray-200 flex items-center justify-center"
                   title="Gửi tin nhắn"
                 >
                   <MessageCircle className="w-4 h-4" />
@@ -180,28 +187,6 @@ export function ChannelUserInfo({
           ) : null}
         </div>
       </div>
-
-      {/* Stats popup modal */}
-      {openStatPopup && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          onClick={() => setOpenStatPopup(null)}
-        >
-          <div
-            className="bg-background rounded-lg border border-border p-6 shadow-lg max-w-sm mx-4 max-h-[70vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-base font-semibold text-foreground mb-4 capitalize">
-              {openStatPopup === 'followers' && 'Followers'}
-              {openStatPopup === 'following' && 'Following'}
-              {openStatPopup === 'likes' && 'Likes'}
-            </h2>
-            <div className="text-sm text-muted-foreground text-center py-8">
-              Tính năng này sẽ sớm được thêm vào
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

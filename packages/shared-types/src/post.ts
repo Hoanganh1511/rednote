@@ -26,6 +26,8 @@ export interface PostFeedItem {
   likedByMe?: boolean;
   /** Số bình luận (0 nếu chưa có bảng / chưa có bình luận). */
   commentCount?: number;
+  /** Người xem (Bearer) có đang theo dõi tác giả hay không. */
+  isFollowingAuthor?: boolean;
   user?: PostAuthorSnippet;
 }
 
