@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Menu } from 'lucide-react';
 import type { User } from 'shared-types';
 import { useCurrentUser } from '@/hooks/use-auth';
@@ -14,6 +14,7 @@ interface ChannelUserInfoProps {
   onFollowingOptionsClose?: () => void;
   onUnfollowStart?: () => void;
   onUnfollowEnd?: () => void;
+  onUserDataRefresh?: (user: User) => void;
 }
 
 function formatCount(n: number): string {
@@ -30,30 +31,68 @@ export function ChannelUserInfo({
   onFollowingOptionsClose,
   onUnfollowStart,
   onUnfollowEnd,
+  onUserDataRefresh,
 }: ChannelUserInfoProps) {
   const currentUser = useCurrentUser();
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [followerCount, setFollowerCount] = useState(user.followerCount);
+  const [followingCount, setFollowingCount] = useState(user.followingCount);
+  const [totalLikesReceived, setTotalLikesReceived] = useState(user.totalLikesReceived);
   const displayName = user.displayName || user.username;
+  const syncTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastRefreshRef = useRef<number>(0);
 
-  // Check if current user is following this user and sync follower count
+  // Refetch user data from server to verify counts
+  const refetchUserData = async () => {
+    try {
+      const response = await apiClient.get<User>(`/users/${user.id}`);
+      const freshData = response.data;
+      setFollowerCount(freshData.followerCount);
+      setFollowingCount(freshData.followingCount);
+      setTotalLikesReceived(freshData.totalLikesReceived);
+      onUserDataRefresh?.(freshData);
+      lastRefreshRef.current = Date.now();
+    } catch {
+      // Silent fail - keep optimistic updates
+    }
+  };
+
+  // Initial load: check following status and set up periodic sync
   useEffect(() => {
     setFollowerCount(user.followerCount);
-    if (currentUser && currentUser.id !== user.id) {
-      const checkFollowing = async () => {
-        try {
-          const response = await apiClient.get(`/users/${user.id}/is-following`);
-          const following = response.data?.isFollowing ?? false;
-          setIsFollowing(following);
-          onFollowingChange?.(following);
-        } catch {
-          // Handle error silently
-        }
-      };
-      checkFollowing();
+    setFollowingCount(user.followingCount);
+    setTotalLikesReceived(user.totalLikesReceived);
+
+    if (!currentUser || currentUser.id === user.id) {
+      return;
     }
-  }, [currentUser, user.id, user.followerCount, onFollowingChange]);
+
+    const checkFollowing = async () => {
+      try {
+        const response = await apiClient.get(`/users/${user.id}/is-following`);
+        const following = response.data?.isFollowing ?? false;
+        setIsFollowing(following);
+        onFollowingChange?.(following);
+      } catch {
+        // Handle error silently
+      }
+    };
+    checkFollowing();
+
+    // Periodic sync mỗi 60 giây để đảm bảo data consistency
+    const startPeriodicSync = () => {
+      syncTimerRef.current = setInterval(() => {
+        refetchUserData();
+      }, 60000); // 60 seconds
+    };
+
+    startPeriodicSync();
+
+    return () => {
+      if (syncTimerRef.current) clearInterval(syncTimerRef.current);
+    };
+  }, [currentUser, user.id, onFollowingChange]);
 
   // Listen for unfollow event from parent
   useEffect(() => {
@@ -76,19 +115,40 @@ export function ChannelUserInfo({
   const performFollow = async () => {
     setIsLoading(true);
     onUnfollowStart?.();
+
+    // Store optimistic state untuk rollback nếu lỗi
+    const prevFollowing = isFollowing;
+    const prevFollowerCount = followerCount;
+
     try {
-      if (isFollowing) {
-        await apiClient.delete(`/users/${user.id}/follow`);
-        setFollowerCount((prev) => Math.max(0, prev - 1));
-      } else {
-        await apiClient.post(`/users/${user.id}/follow`);
-        setFollowerCount((prev) => prev + 1);
-      }
+      // 1️⃣ OPTIMISTIC UPDATE - cập nhật UI ngay
       const newFollowingState = !isFollowing;
       setIsFollowing(newFollowingState);
+      if (newFollowingState) {
+        setFollowerCount((prev) => prev + 1);
+      } else {
+        setFollowerCount((prev) => Math.max(0, prev - 1));
+      }
       onFollowingChange?.(newFollowingState);
-    } catch {
-      // Handle error silently
+
+      // 2️⃣ SEND REQUEST - gửi action lên server
+      if (newFollowingState) {
+        await apiClient.post(`/users/${user.id}/follow`);
+      } else {
+        await apiClient.delete(`/users/${user.id}/follow`);
+      }
+
+      // 3️⃣ REFETCH - verify dữ liệu từ server ngay sau action
+      // Timeout ngắn (100ms) để cho server xử lý xong trước khi refetch
+      setTimeout(() => {
+        refetchUserData();
+      }, 100);
+    } catch (error) {
+      // 4️⃣ ROLLBACK - nếu action thất bại, rollback UI về trạng thái cũ
+      setIsFollowing(prevFollowing);
+      setFollowerCount(prevFollowerCount);
+      onFollowingChange?.(prevFollowing);
+      console.error('Follow action failed:', error);
     } finally {
       setIsLoading(false);
       onUnfollowEnd?.();
@@ -137,7 +197,7 @@ export function ChannelUserInfo({
               className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
             >
               <div className="text-[15px] font-medium leading-tight text-foreground">
-                {formatCount(user.followingCount)}
+                {formatCount(followingCount)}
               </div>
               <div className="text-[9px] text-muted-foreground mt-0.5">Đang theo dõi</div>
             </button>
@@ -147,7 +207,7 @@ export function ChannelUserInfo({
               className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
             >
               <div className="text-[15px] font-medium leading-tight text-foreground">
-                {formatCount(user.totalLikesReceived)}
+                {formatCount(totalLikesReceived)}
               </div>
               <div className="text-[9px] text-muted-foreground mt-0.5">Lượt thích</div>
             </button>

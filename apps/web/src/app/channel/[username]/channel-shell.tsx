@@ -27,6 +27,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
   const [isUnfollowing, setIsUnfollowing] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [openStatsDrawer, setOpenStatsDrawer] = useState(false);
+  const [profileData, setProfileData] = useState<User>(profile);
 
   const handleMainScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     setScrollY(e.currentTarget.scrollTop);
@@ -90,15 +91,16 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
         {/* Profile content */}
         <div className="mx-auto max-w-2xl px-4 pb-6">
           <ChannelUserInfo
-            user={profile}
+            user={profileData}
             onFollowingChange={setIsFollowing}
             onStatsClick={() => setOpenStatsDrawer(true)}
             onFollowingOptionsOpen={() => setFollowingOptionsOpen(true)}
             onFollowingOptionsClose={closeFollowingOptions}
             onUnfollowStart={() => setIsUnfollowing(true)}
             onUnfollowEnd={() => setIsUnfollowing(false)}
+            onUserDataRefresh={setProfileData}
           />
-          <ChannelBio user={profile} />
+          <ChannelBio user={profileData} />
 
           {/* Power Up bar */}
           <div className="border-border bg-background mb-4 flex items-center justify-between rounded-xl border px-4 py-3">
@@ -115,19 +117,19 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
 
         {/* Posts */}
         <div className="mx-auto max-w-2xl px-4 pb-6">
-          <ChannelPostList userId={profile.id} initialPosts={initialPosts} />
+          <ChannelPostList userId={profileData.id} initialPosts={initialPosts} />
         </div>
       </main>
 
       <ChannelHeader
-        user={profile}
+        user={profileData}
         scrollY={scrollY}
         onMessageClick={() => setMessageDrawerOpen(true)}
       />
       <ChannelMessageDrawer
         open={messageDrawerOpen}
         onClose={() => setMessageDrawerOpen(false)}
-        userDisplayName={profile.displayName || profile.username}
+        userDisplayName={profileData.displayName || profileData.username}
       />
 
       {/* Following options bottom sheet drawer — rendered at viewport level */}
@@ -217,14 +219,14 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
           },
         ]}
       >
-        Bạn sẽ không còn nhận được cập nhật từ {profile.displayName || profile.username}
+        Bạn sẽ không còn nhận được cập nhật từ {profileData.displayName || profileData.username}
       </Dialog>
 
       {/* Stats drawer — viewport level to avoid clipping */}
       <ChannelStatsDrawer
         open={openStatsDrawer}
         onClose={() => setOpenStatsDrawer(false)}
-        user={profile}
+        user={profileData}
       />
     </div>
   );
