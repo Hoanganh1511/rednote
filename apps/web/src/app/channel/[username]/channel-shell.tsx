@@ -20,6 +20,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
   const [scrollY, setScrollY] = useState(0);
   const [messageDrawerOpen, setMessageDrawerOpen] = useState(false);
   const [followingOptionsOpen, setFollowingOptionsOpen] = useState(false);
+  const [isFollowingOptionsMounting, setIsFollowingOptionsMounting] = useState(false);
   const [isFollowingOptionsClosing, setIsFollowingOptionsClosing] = useState(false);
   const [isUnfollowing, setIsUnfollowing] = useState(false);
 
@@ -48,6 +49,16 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
     window.addEventListener('unfollowComplete', handleUnfollowComplete as EventListener);
     return () => window.removeEventListener('unfollowComplete', handleUnfollowComplete as EventListener);
   }, []);
+
+  useEffect(() => {
+    if (!followingOptionsOpen) return;
+    setIsFollowingOptionsMounting(true);
+    // Trigger animation after mount
+    const timer = requestAnimationFrame(() => {
+      setIsFollowingOptionsMounting(false);
+    });
+    return () => cancelAnimationFrame(timer);
+  }, [followingOptionsOpen]);
 
   const closeFollowingOptions = () => {
     setIsFollowingOptionsClosing(true);
@@ -105,17 +116,21 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
 
       {/* Following options bottom sheet drawer — rendered at viewport level */}
       {followingOptionsOpen && (
-        <div className={`fixed inset-0 z-50 transition-opacity duration-1000 ${isFollowingOptionsClosing ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-50 transition-opacity duration-1000 ${
+          isFollowingOptionsMounting || isFollowingOptionsClosing ? 'opacity-0' : 'opacity-100'
+        }`}>
           {/* Backdrop */}
           <div
-            className={`fixed inset-0 bg-black/50 transition-opacity duration-1000 ${isFollowingOptionsClosing ? 'opacity-0' : 'opacity-100'}`}
+            className={`fixed inset-0 bg-black/50 transition-opacity duration-1000 ${
+              isFollowingOptionsMounting || isFollowingOptionsClosing ? 'opacity-0' : 'opacity-100'
+            }`}
             onClick={closeFollowingOptions}
           />
 
           {/* Bottom sheet */}
           <div className={`fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-lg border border-b-0 border-border shadow-lg transition-all duration-1000 ${
-            isFollowingOptionsClosing ? 'translate-y-96 opacity-0' : 'translate-y-0 opacity-100'
-          }`}>
+            isFollowingOptionsMounting ? 'translate-y-96 opacity-0' : 'translate-y-0 opacity-100'
+          } ${isFollowingOptionsClosing ? 'translate-y-96 opacity-0' : ''}`}>
             <div className="px-[15px] py-4">
               {/* Option: Special Follow */}
               <button
