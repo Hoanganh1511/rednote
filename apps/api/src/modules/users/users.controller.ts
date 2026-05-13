@@ -45,7 +45,8 @@ export class UsersController {
     @CurrentUser() user: UserEntity,
     @Param('id') followingId: string,
   ): Promise<{ isFollowing: boolean }> {
-    console.log('🔵 Follow endpoint reached', { userId: user?.id, followingId });
+    console.log('🔵 Follow endpoint:', { user, followingId });
+    console.log('🔵 User keys:', Object.keys(user || {}));
     await this.usersService.follow(user.id, followingId);
     return { isFollowing: true };
   }
