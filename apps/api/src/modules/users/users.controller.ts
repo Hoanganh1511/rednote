@@ -44,8 +44,9 @@ export class UsersController {
   async followUser(
     @CurrentUser() user: UserEntity,
     @Param('id') followingId: string,
-  ): Promise<void> {
+  ): Promise<{ isFollowing: boolean }> {
     await this.usersService.follow(user.id, followingId);
+    return { isFollowing: true };
   }
 
   @Delete(':id/follow')
@@ -53,8 +54,9 @@ export class UsersController {
   async unfollowUser(
     @CurrentUser() user: UserEntity,
     @Param('id') followingId: string,
-  ): Promise<void> {
+  ): Promise<{ isFollowing: boolean }> {
     await this.usersService.unfollow(user.id, followingId);
+    return { isFollowing: false };
   }
 
   @Public()
