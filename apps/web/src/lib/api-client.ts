@@ -88,8 +88,9 @@ apiClient.interceptors.response.use(
         return apiClient(original);
       } catch {
         const { useUserStore } = await import('@/stores/user-store');
+        const { useLoginModalStore } = await import('@/stores/login-modal-store');
         useUserStore.getState().logout();
-        if (typeof window !== 'undefined') window.location.href = '/';
+        useLoginModalStore.getState().openModal();
       }
     }
 
