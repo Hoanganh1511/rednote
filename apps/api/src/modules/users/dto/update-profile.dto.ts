@@ -46,4 +46,9 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsUrl()
   avatarUrl?: string;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/covers/cover-1.jpg' })
+  @IsOptional()
+  @IsUrl()
+  coverUrl?: string;
 }

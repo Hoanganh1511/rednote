@@ -19,6 +19,7 @@ import {
 import { formatRelativeTimeVi } from '@/lib/format-relative-time-vi';
 import { PostImageGrid } from '@/components/home/post-image-grid';
 import { ComingSoonBadge } from '@/components/ui/coming-soon-badge';
+import { PostLikersDrawer } from '@/app/channel/[username]/components/post-likers-drawer';
 
 type PostFeedCardProps = {
   post: PostFeedItem;
@@ -63,6 +64,7 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [followDrawerOpen, setFollowDrawerOpen] = useState(false);
   const [followDrawerIn, setFollowDrawerIn] = useState(false);
+  const [likersDrawerOpen, setLikersDrawerOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -248,62 +250,70 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
 
       {/* Thanh tương tác */}
       <div className="flex items-center justify-end gap-6 px-3 pt-2 pb-2.5 sm:gap-7 sm:px-4 sm:pb-3">
-        <button
-          type="button"
-          aria-pressed={likedByMe}
-          aria-label="Thích"
-          disabled={toggleLike.isPending}
-          onClick={() => {
-            if (!accessToken) {
-              toast.message('Đăng nhập để thích bài');
-              return;
-            }
-            toggleLike.mutate(undefined, {
-              onSuccess: (data) => {
-                setLikedByMe(data.liked);
-                setLikeCount(data.likeCount);
-                if (drawerPost?.id === post.id) {
-                  patchDrawerPost({ likedByMe: data.liked, likeCount: data.likeCount });
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-pressed={likedByMe}
+              aria-label="Thích"
+              disabled={toggleLike.isPending}
+              onClick={() => {
+                if (!accessToken) {
+                  toast.message('Đăng nhập để thích bài');
+                  return;
                 }
-              },
-              onError: (err: unknown) => {
-                const status = (err as { response?: { status?: number } })?.response?.status;
-                if (status === 401) toast.message('Đăng nhập để thích bài');
-                else toast.message('Không thực hiện được. Thử lại sau.');
-              },
-            });
-          }}
-          className={cn(
-            'hover:bg-muted flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors',
-            likedByMe ? 'text-[#00A1D6]' : 'text-muted-foreground hover:text-foreground',
-            toggleLike.isPending && 'opacity-60',
-          )}
-        >
-          <ThumbsUp
-            className="h-5 w-5"
-            strokeWidth={1.75}
-            fill={likedByMe ? 'currentColor' : 'none'}
-          />
-          <span className="text-[13px] font-medium tabular-nums">{likeCount}</span>
-        </button>
-        <button
-          type="button"
-          aria-label={`Bình luận (${commentCount})`}
-          onClick={() => openDrawer(post, { focusComments: true })}
-          className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors"
-        >
-          <MessageCircle className="h-5 w-5" strokeWidth={1.75} />
-          <span className="text-[13px] font-medium tabular-nums">{commentCount}</span>
-        </button>
-        <button
-          type="button"
-          aria-label="Chia sẻ"
-          onClick={() => toast.message('Chia sẻ — sắp có')}
-          className="relative text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors"
-        >
-          <Share2 className="h-5 w-5" strokeWidth={1.75} />
-          <ComingSoonBadge />
-        </button>
+                toggleLike.mutate(undefined, {
+                  onSuccess: (data) => {
+                    setLikedByMe(data.liked);
+                    setLikeCount(data.likeCount);
+                    if (drawerPost?.id === post.id) {
+                      patchDrawerPost({ likedByMe: data.liked, likeCount: data.likeCount });
+                    }
+                  },
+                  onError: (err: unknown) => {
+                    const status = (err as { response?: { status?: number } })?.response?.status;
+                    if (status === 401) toast.message('Đăng nhập để thích bài');
+                    else toast.message('Không thực hiện được. Thử lại sau.');
+                  },
+                });
+              }}
+              className={cn(
+                'hover:bg-muted flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors',
+                likedByMe ? 'text-[#00A1D6]' : 'text-muted-foreground hover:text-foreground',
+                toggleLike.isPending && 'opacity-60',
+              )}
+            >
+              <ThumbsUp
+                className="h-5 w-5"
+                strokeWidth={1.75}
+                fill={likedByMe ? 'currentColor' : 'none'}
+              />
+            </button>
+            <button
+              onClick={() => likeCount > 0 && setLikersDrawerOpen(true)}
+              disabled={likeCount === 0}
+              className="text-[13px] font-medium tabular-nums text-[#00A1D6] hover:underline disabled:opacity-50 disabled:hover:no-underline"
+            >
+              {likeCount}
+            </button>
+          </div>
+          <button
+            type="button"
+            aria-label={`Bình luận (${commentCount})`}
+            onClick={() => openDrawer(post, { focusComments: true })}
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors"
+          >
+            <MessageCircle className="h-5 w-5" strokeWidth={1.75} />
+            <span className="text-[13px] font-medium tabular-nums">{commentCount}</span>
+          </button>
+          <button
+            type="button"
+            aria-label="Chia sẻ"
+            onClick={() => toast.message('Chia sẻ — sắp có')}
+            className="relative text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors"
+          >
+            <Share2 className="h-5 w-5" strokeWidth={1.75} />
+            <ComingSoonBadge />
+          </button>
       </div>
 
       {/* Follow drawer */}
@@ -353,6 +363,13 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
           </div>
         </>
       )}
+
+      {/* Likers drawer */}
+      <PostLikersDrawer
+        open={likersDrawerOpen}
+        postId={post.id}
+        onClose={() => setLikersDrawerOpen(false)}
+      />
     </article>
   );
 }

@@ -1,8 +1,12 @@
+import { GripHorizontal } from 'lucide-react';
+
 interface ChannelCoverProps {
   coverUrl?: string | null;
+  isOwnProfile?: boolean;
+  onCoverSelectClick?: () => void;
 }
 
-export function ChannelCover({ coverUrl }: ChannelCoverProps) {
+export function ChannelCover({ coverUrl, isOwnProfile = false, onCoverSelectClick }: ChannelCoverProps) {
   return (
     <div
       className="relative h-52 w-full overflow-hidden"
@@ -21,6 +25,17 @@ export function ChannelCover({ coverUrl }: ChannelCoverProps) {
             : undefined
         }
       />
+
+      {isOwnProfile && (
+        <button
+          onClick={onCoverSelectClick}
+          className="absolute bottom-4 right-4 p-2 bg-background/80 hover:bg-background rounded-lg transition-colors shadow-md backdrop-blur-sm"
+          title="Chọn ảnh bìa"
+          aria-label="Chọn ảnh bìa"
+        >
+          <GripHorizontal className="h-5 w-5 text-foreground" />
+        </button>
+      )}
     </div>
   );
 }

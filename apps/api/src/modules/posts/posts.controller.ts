@@ -83,6 +83,17 @@ export class PostsController {
     return this.postsService.togglePostLike(user.id, id);
   }
 
+  @Public()
+  @Get(':id/likers')
+  @ApiOperation({ summary: 'Danh sách người đã like post' })
+  getPostLikers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ): Promise<{ items: any[]; total: number }> {
+    return this.postsService.getPostLikers(id, page, limit);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update post/draft' })
   updatePost(

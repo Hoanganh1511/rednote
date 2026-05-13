@@ -17,6 +17,7 @@ export const ROUTES = {
   CHANNEL: (username: string) => `/channel/${username}`,
   UPLOAD: '/upload',
   SETTINGS: '/settings',
+  ACCOUNT_INFO: '/account/info',
 } as const;
 
 export const QUERY_KEYS = {

@@ -13,6 +13,10 @@ import { ChannelTabs } from './components/channel-tabs';
 import { ChannelPostList } from './components/channel-post-list';
 import { ChannelMessageDrawer } from './components/channel-message-drawer';
 import { ChannelStatsDrawer } from './components/channel-stats-drawer';
+import { CoverImageSelectorDrawer } from './components/cover-image-selector-drawer';
+import { useCurrentUser } from '@/hooks/use-auth';
+import { ROUTES } from '@/constants';
+import { useNavigationWithLoader } from '@/hooks/use-navigation-with-loader';
 
 interface ChannelShellProps {
   profile: User;
@@ -20,6 +24,8 @@ interface ChannelShellProps {
 }
 
 export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
+  const currentUser = useCurrentUser();
+  const router = useNavigationWithLoader();
   const [scrollY, setScrollY] = useState(0);
   const [messageDrawerOpen, setMessageDrawerOpen] = useState(false);
   const [followingOptionsOpen, setFollowingOptionsOpen] = useState(false);
@@ -28,6 +34,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
   const [isUnfollowing, setIsUnfollowing] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [openStatsDrawer, setOpenStatsDrawer] = useState(false);
+  const [coverImageSelectorOpen, setCoverImageSelectorOpen] = useState(false);
   const [profileData, setProfileData] = useState<User>(profile);
 
   // Refetch user data from server to keep stats in sync
@@ -97,7 +104,11 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
         onScroll={handleMainScroll}
       >
         {/* Cover — full-width, no padding */}
-        <ChannelCover coverUrl={profile.coverUrl ?? null} />
+        <ChannelCover
+          coverUrl={profileData.coverUrl ?? null}
+          isOwnProfile={currentUser?.id === profile.id}
+          onCoverSelectClick={() => setCoverImageSelectorOpen(true)}
+        />
 
         {/* Profile content */}
         <div className="mx-auto max-w-2xl px-4 pb-6">
@@ -110,17 +121,18 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
             onUnfollowStart={() => setIsUnfollowing(true)}
             onUnfollowEnd={() => setIsUnfollowing(false)}
             onUserDataRefresh={setProfileData}
+            onEditProfileClick={() => router.push(ROUTES.ACCOUNT_INFO)}
           />
           <ChannelBio user={profileData} />
 
           {/* Power Up bar */}
-          <div className="border-border bg-background mb-4 flex items-center justify-between rounded-xl border px-4 py-3">
+          {/* <div className="border-border bg-background mb-4 flex items-center justify-between rounded-xl border px-4 py-3">
             <div className="text-foreground flex items-center gap-2 text-sm font-medium">
               <Zap className="h-4 w-4 fill-amber-400 text-amber-400" />
               <span>Tăng sức mạnh</span>
             </div>
             <span className="text-muted-foreground text-xs">0 người ủng hộ</span>
-          </div>
+          </div> */}
         </div>
 
         {/* Sticky tabs — full width */}
@@ -242,6 +254,15 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
         open={openStatsDrawer}
         onClose={() => setOpenStatsDrawer(false)}
         user={profileData}
+      />
+
+      {/* Cover image selector drawer */}
+      <CoverImageSelectorDrawer
+        open={coverImageSelectorOpen}
+        onClose={() => setCoverImageSelectorOpen(false)}
+        onCoverSelected={(url) => {
+          setProfileData((prev) => ({ ...prev, coverUrl: url }));
+        }}
       />
     </div>
   );

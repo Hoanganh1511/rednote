@@ -24,6 +24,9 @@ export class UserEntity extends BaseEntity {
   @Column({ name: 'avatar_url', nullable: true, type: 'text' })
   avatarUrl: string | null;
 
+  @Column({ name: 'cover_url', nullable: true, type: 'text' })
+  coverUrl: string | null;
+
   @Column({ nullable: true, type: 'text' })
   bio: string | null;
 

@@ -420,4 +420,38 @@ export class PostsService {
       await queryRunner.release();
     }
   }
+
+  async getPostLikers(
+    postId: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ items: Partial<UserEntity>[]; total: number }> {
+    const post = await this.postRepo.findOne({ where: { id: postId } });
+    if (!post) {
+      throw new NotFoundException('Post không tìm thấy');
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [likers, total] = await this.postLikeRepo.findAndCount({
+      where: { postId },
+      relations: ['user'],
+      select: {
+        user: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+        },
+      },
+      order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
+    });
+
+    return {
+      items: likers.map((like) => like.user),
+      total,
+    };
+  }
 }

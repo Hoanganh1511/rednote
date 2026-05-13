@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { MessageCircle, Bookmark, ChevronRight, LogOut, ScanEye, X, Upload, type LucideIcon } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { useLoginModalStore } from '@/stores/login-modal-store';
 import { SearchDropdown } from '@/components/search-dropdown';
 import { useUserStore } from '@/stores/user-store';
@@ -11,6 +10,7 @@ import { apiClient } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { ROUTES, SITE_MAIN_CONTENT_CLASS } from '@/constants';
+import { useNavigationWithLoader } from '@/hooks/use-navigation-with-loader';
 import type { User } from 'shared-types';
 import { ComingSoonBadge } from '@/components/ui/coming-soon-badge';
 
@@ -212,11 +212,10 @@ function CollectionDropdown() {
 }
 
 function UserMenu({ user }: { user: User }) {
-  const [open, setOpen] = useState(false);
   const logout = useUserStore((s) => s.logout);
   const justLoggedIn = useUserStore((s) => s.justLoggedIn);
   const setJustLoggedIn = useUserStore((s) => s.setJustLoggedIn);
-  const router = useRouter();
+  const router = useNavigationWithLoader();
 
   const handleLogout = async () => {
     try {
@@ -225,15 +224,19 @@ function UserMenu({ user }: { user: User }) {
       /* ignore */
     }
     logout();
-    setOpen(false);
     router.push('/');
   };
 
   const initial = (user.displayName ?? user.username ?? '?')[0]?.toUpperCase();
 
+  const handleAvatarClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(ROUTES.CHANNEL(user.username));
+  };
+
   return (
     <>
-      <div className="relative shrink-0 cursor-pointer" onClick={() => setOpen((v) => !v)}>
+      <div className="relative shrink-0 cursor-pointer group">
         {justLoggedIn && (
           <LoginGreetBubble
             name={user.displayName ?? user.username ?? 'bạn'}
@@ -241,13 +244,16 @@ function UserMenu({ user }: { user: User }) {
           />
         )}
 
-        <div className="h-10 w-10">
+        <button
+          onClick={handleAvatarClick}
+          className="flex items-center justify-center h-10 w-10 rounded-full hover:opacity-80 transition-opacity"
+          title={`Trang ${user.displayName ?? user.username}`}
+          aria-label={`Trang ${user.displayName ?? user.username}`}
+        >
           <div
             className={cn(
               'h-full w-full overflow-hidden rounded-full bg-[#00aeec] text-sm font-semibold text-white',
               'flex items-center justify-center',
-              'z-avatar-float relative transition-transform duration-300 ease-out',
-              open ? 'md:translate-y-10 md:scale-[2.0]' : 'translate-y-0 scale-100',
             )}
           >
             {user.avatarUrl ? (
@@ -260,92 +266,8 @@ function UserMenu({ user }: { user: User }) {
               initial
             )}
           </div>
-        </div>
-
-        {/* Desktop dropdown only */}
-        <div
-          className={cn(
-            'z-dropdown absolute top-14 left-1/2 w-72 -translate-x-1/2',
-            'hidden md:block',
-            'border-border bg-background overflow-hidden rounded-2xl border shadow-xl',
-            'origin-top transition-all duration-300',
-            open
-              ? 'pointer-events-auto scale-100 opacity-100'
-              : 'pointer-events-none scale-95 opacity-0',
-          )}
-        >
-          <div className="flex flex-col items-center gap-2.5 px-5 pt-14 pb-6">
-            <p className="text-base font-semibold">
-              {user.displayName ?? user.username ?? 'Người dùng'}
-            </p>
-            {user.phoneNumber && (
-              <p className="text-muted-foreground text-xs">{user.phoneNumber}</p>
-            )}
-            <div className="text-muted-foreground flex items-center gap-4 text-xs">
-              <span>
-                Đồng xu: <span className="text-foreground font-medium">0</span>
-              </span>
-              <span>
-                Đồng xu B: <span className="text-foreground font-medium">0</span>
-              </span>
-            </div>
-            <div className="mt-1 flex w-full items-center gap-2">
-              <span className="text-[10px] font-bold text-[#00aeec]">LV1</span>
-              <div className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full">
-                <div className="h-full w-[10%] rounded-full bg-[#00aeec]" />
-              </div>
-              <span className="text-muted-foreground text-[10px] font-bold">LV2</span>
-            </div>
-          </div>
-          <div className="border-border grid grid-cols-3 border-y py-5">
-            {[
-              { label: 'Theo dõi', value: user.followingCount },
-              { label: 'Người hâm mộ', value: user.followerCount },
-              { label: 'Động', value: user.videoCount },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex flex-col items-center gap-1.5">
-                <span className="text-lg font-semibold">{value}</span>
-                <span className="text-muted-foreground text-xs">{label}</span>
-              </div>
-            ))}
-          </div>
-          <div className="py-2">
-            {MENU_ITEMS.map(({ label, href, comingSoon }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setOpen(false)}
-                className="relative hover:bg-accent flex items-center justify-between px-5 py-3.5 text-sm transition-colors"
-              >
-                {label}
-                <div className="flex items-center gap-2">
-                  {comingSoon && <ComingSoonBadge />}
-                  <ChevronRight className="text-muted-foreground h-4 w-4" />
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div className="border-border border-t p-2">
-            <button
-              onClick={handleLogout}
-              className="text-muted-foreground hover:bg-accent hover:text-foreground flex w-full items-center gap-2 rounded-lg px-5 py-3 text-sm transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              Đăng xuất
-            </button>
-          </div>
-        </div>
+        </button>
       </div>
-
-      {/* Backdrop — desktop only, closes dropdown on outside click */}
-      <div
-        className={cn(
-          'z-backdrop fixed inset-0 hidden md:block md:bg-transparent',
-          'transition-opacity duration-300',
-          open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
-        )}
-        onClick={() => setOpen(false)}
-      />
     </>
   );
 }

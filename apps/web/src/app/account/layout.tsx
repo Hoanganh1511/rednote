@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { SITE_MAIN_CONTENT_CLASS } from '@/constants';
@@ -13,6 +13,7 @@ import { useAccountUiStore } from '@/stores/account-ui-store';
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   useRequireAuth();
+  const router = useRouter();
   const pathname = usePathname();
   const isHome = pathname === '/account/home';
   const backOverride = useAccountUiStore((s) => s.mobileBackOverride);
@@ -34,23 +35,13 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
           {/* Mobile back button on sub-pages */}
           {!isHome && (
             <div className="mb-4 md:hidden">
-              {backOverride ? (
-                <button
-                  onClick={backOverride}
-                  className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Quay về
-                </button>
-              ) : (
-                <Link
-                  href="/account/home"
-                  className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Quay về
-                </Link>
-              )}
+              <button
+                onClick={() => backOverride ? backOverride() : router.back()}
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Quay về
+              </button>
             </div>
           )}
 

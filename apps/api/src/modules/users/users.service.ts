@@ -125,7 +125,6 @@ export class UsersService {
   }
 
   async follow(followerId: string, followingId: string): Promise<void> {
-    console.log(9999, { followerId, followingId });
     if (followerId === followingId) {
       throw new BadRequestException('Không thể theo dõi chính mình');
     }
@@ -148,10 +147,15 @@ export class UsersService {
         return; // Already following, idempotent
       }
 
-      // Check soft-deleted follow
-      const softDeleted = await queryRunner.manager.findOne(FollowEntity, {
-        where: { followerId, followingId },
-      });
+      // Check soft-deleted follow (include soft-deleted records)
+      const softDeleted = await queryRunner.manager
+        .createQueryBuilder(FollowEntity, 'follow')
+        .where('follow.followerId = :followerId', { followerId })
+        .andWhere('follow.followingId = :followingId', { followingId })
+        .withDeleted()
+        .getOne();
+
+      const isRestore = !!softDeleted;
 
       if (softDeleted) {
         // Restore soft-deleted follow
@@ -165,20 +169,12 @@ export class UsersService {
         await queryRunner.manager.save(follow);
       }
 
-      // Update counters atomically using query builder
-      await queryRunner.manager
-        .createQueryBuilder()
-        .update(UserEntity)
-        .set({ followingCount: () => 'following_count + 1' })
-        .where('id = :id', { id: followerId })
-        .execute();
-
-      await queryRunner.manager
-        .createQueryBuilder()
-        .update(UserEntity)
-        .set({ followerCount: () => 'follower_count + 1' })
-        .where('id = :id', { id: followingId })
-        .execute();
+      // Only update counters if creating new follow (not restoring)
+      if (!isRestore) {
+        // Update counters atomically
+        await queryRunner.manager.increment(UserEntity, { id: followerId }, 'followingCount', 1);
+        await queryRunner.manager.increment(UserEntity, { id: followingId }, 'followerCount', 1);
+      }
 
       await queryRunner.commitTransaction();
     } catch (err) {
@@ -207,20 +203,9 @@ export class UsersService {
       // Soft delete
       await queryRunner.manager.update(FollowEntity, { id: follow.id }, { deletedAt: new Date() });
 
-      // Update counters atomically using query builder
-      await queryRunner.manager
-        .createQueryBuilder()
-        .update(UserEntity)
-        .set({ followingCount: () => 'following_count - 1' })
-        .where('id = :id', { id: followerId })
-        .execute();
-
-      await queryRunner.manager
-        .createQueryBuilder()
-        .update(UserEntity)
-        .set({ followerCount: () => 'follower_count - 1' })
-        .where('id = :id', { id: followingId })
-        .execute();
+      // Update counters atomically
+      await queryRunner.manager.decrement(UserEntity, { id: followerId }, 'followingCount', 1);
+      await queryRunner.manager.decrement(UserEntity, { id: followingId }, 'followerCount', 1);
 
       await queryRunner.commitTransaction();
     } catch (err) {
@@ -232,11 +217,9 @@ export class UsersService {
   }
 
   async isFollowing(followerId: string, followingId: string): Promise<boolean> {
-    console.log('🔍 isFollowing query:', { followerId, followingId });
     const follow = await this.followRepo.findOne({
       where: { followerId, followingId, deletedAt: IsNull() },
     });
-    console.log('🔍 isFollowing result:', follow ? 'found' : 'not found', follow);
     return !!follow;
   }
 

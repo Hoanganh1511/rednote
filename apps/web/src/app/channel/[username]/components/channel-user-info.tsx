@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Menu } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import type { User } from 'shared-types';
 import { useCurrentUser } from '@/hooks/use-auth';
 import { apiClient } from '@/lib/api-client';
+import { ROUTES } from '@/constants';
 
 interface ChannelUserInfoProps {
   user: User;
@@ -15,6 +17,7 @@ interface ChannelUserInfoProps {
   onUnfollowStart?: () => void;
   onUnfollowEnd?: () => void;
   onUserDataRefresh?: (user: User) => void;
+  onEditProfileClick?: () => void;
 }
 
 function formatCount(n: number): string {
@@ -32,8 +35,10 @@ export function ChannelUserInfo({
   onUnfollowStart,
   onUnfollowEnd,
   onUserDataRefresh,
+  onEditProfileClick,
 }: ChannelUserInfoProps) {
   const currentUser = useCurrentUser();
+  const router = useRouter();
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [followerCount, setFollowerCount] = useState(user.followerCount);
@@ -92,7 +97,7 @@ export function ChannelUserInfo({
     return () => {
       if (syncTimerRef.current) clearInterval(syncTimerRef.current);
     };
-  }, [currentUser, user.id, onFollowingChange]);
+  }, [currentUser, user.id, user.followerCount, user.totalLikesReceived, onFollowingChange]);
 
   // Listen for unfollow event from parent
   useEffect(() => {
@@ -213,8 +218,15 @@ export function ChannelUserInfo({
             </button>
           </div>
 
-          {/* Follow & Message buttons */}
-          {currentUser && currentUser.id !== user.id ? (
+          {/* Edit profile or Follow & Message buttons */}
+          {currentUser && currentUser.id === user.id ? (
+            <button
+              onClick={onEditProfileClick}
+              className="flex-1 rounded py-1.5 text-xs font-semibold border-2 border-[#00aeec] text-[#00aeec] bg-transparent hover:bg-[#00aeec]/10 transition-colors active:opacity-80 flex items-center justify-center"
+            >
+              Chỉnh sửa hồ sơ
+            </button>
+          ) : currentUser ? (
             <div className="flex gap-2">
               <button
                 onClick={handleFollowClick}
