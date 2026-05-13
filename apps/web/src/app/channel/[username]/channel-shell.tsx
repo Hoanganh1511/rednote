@@ -20,6 +20,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
   const [scrollY, setScrollY] = useState(0);
   const [messageDrawerOpen, setMessageDrawerOpen] = useState(false);
   const [followingOptionsOpen, setFollowingOptionsOpen] = useState(false);
+  const [isFollowingOptionsClosing, setIsFollowingOptionsClosing] = useState(false);
   const [isUnfollowing, setIsUnfollowing] = useState(false);
 
   const handleMainScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -48,6 +49,14 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
     return () => window.removeEventListener('unfollowComplete', handleUnfollowComplete as EventListener);
   }, []);
 
+  const closeFollowingOptions = () => {
+    setIsFollowingOptionsClosing(true);
+    setTimeout(() => {
+      setFollowingOptionsOpen(false);
+      setIsFollowingOptionsClosing(false);
+    }, 300);
+  };
+
   return (
     <div className="relative w-full">
       <main
@@ -63,7 +72,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
           <ChannelUserInfo
             user={profile}
             onFollowingOptionsOpen={() => setFollowingOptionsOpen(true)}
-            onFollowingOptionsClose={() => setFollowingOptionsOpen(false)}
+            onFollowingOptionsClose={closeFollowingOptions}
             onUnfollowStart={() => setIsUnfollowing(true)}
             onUnfollowEnd={() => setIsUnfollowing(false)}
           />
@@ -96,15 +105,17 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
 
       {/* Following options bottom sheet drawer — rendered at viewport level */}
       {followingOptionsOpen && (
-        <div className="fixed inset-0 z-50">
+        <div className={`fixed inset-0 z-50 transition-opacity duration-300 ${isFollowingOptionsClosing ? 'opacity-0' : 'opacity-100'}`}>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 transition-opacity"
-            onClick={() => setFollowingOptionsOpen(false)}
+            className={`fixed inset-0 bg-black/50 transition-opacity duration-300 ${isFollowingOptionsClosing ? 'opacity-0' : 'opacity-100'}`}
+            onClick={closeFollowingOptions}
           />
 
           {/* Bottom sheet */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-lg border border-b-0 border-border shadow-lg animate-in slide-in-from-bottom-5 duration-300">
+          <div className={`fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-lg border border-b-0 border-border shadow-lg transition-all duration-300 ${
+            isFollowingOptionsClosing ? 'translate-y-full opacity-0' : 'translate-y-0 opacity-100 animate-in slide-in-from-bottom-5'
+          }`}>
             <div className="px-[15px] py-4">
               {/* Option: Special Follow */}
               <button
@@ -131,7 +142,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
 
               {/* Cancel button */}
               <button
-                onClick={() => setFollowingOptionsOpen(false)}
+                onClick={closeFollowingOptions}
                 className="w-full text-center py-[6px] text-sm text-foreground hover:opacity-70 transition-opacity font-medium"
               >
                 Cancel
