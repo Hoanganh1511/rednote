@@ -54,7 +54,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
     setTimeout(() => {
       setFollowingOptionsOpen(false);
       setIsFollowingOptionsClosing(false);
-    }, 500);
+    }, 1000);
   };
 
   return (
@@ -105,15 +105,15 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
 
       {/* Following options bottom sheet drawer — rendered at viewport level */}
       {followingOptionsOpen && (
-        <div className={`fixed inset-0 z-50 transition-opacity duration-500 ${isFollowingOptionsClosing ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-50 transition-opacity duration-1000 ${isFollowingOptionsClosing ? 'opacity-0' : 'opacity-100'}`}>
           {/* Backdrop */}
           <div
-            className={`fixed inset-0 bg-black/50 transition-opacity duration-500 ${isFollowingOptionsClosing ? 'opacity-0' : 'opacity-100'}`}
+            className={`fixed inset-0 bg-black/50 transition-opacity duration-1000 ${isFollowingOptionsClosing ? 'opacity-0' : 'opacity-100'}`}
             onClick={closeFollowingOptions}
           />
 
           {/* Bottom sheet */}
-          <div className={`fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-lg border border-b-0 border-border shadow-lg transition-all duration-500 ${
+          <div className={`fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-lg border border-b-0 border-border shadow-lg transition-all duration-1000 ${
             isFollowingOptionsClosing ? 'translate-y-96 opacity-0' : 'translate-y-0 opacity-100'
           }`}>
             <div className="px-[15px] py-4">
