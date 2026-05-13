@@ -17,6 +17,14 @@ export function ChannelHeader({ user, scrollY, onMessageClick }: ChannelHeaderPr
   const router = useRouter();
   const isSolid = scrollY > HEADER_THRESHOLD;
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/');
+    }
+  };
+
   const btnClass = cn(
     'flex h-9 w-9 items-center justify-center rounded-full transition-colors',
     isSolid
@@ -34,7 +42,7 @@ export function ChannelHeader({ user, scrollY, onMessageClick }: ChannelHeaderPr
       <button
         type="button"
         className={btnClass}
-        onClick={() => router.back()}
+        onClick={handleBack}
         aria-label="Quay lại"
       >
         <ChevronLeft className="h-5 w-5" />
