@@ -1,4 +1,4 @@
-import { Column, DeleteDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, DeleteDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { UserEntity } from './user.entity';
 
 @Entity('follows')
@@ -16,9 +16,11 @@ export class FollowEntity {
   followingId: string;
 
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'follower_id' })
   follower: UserEntity;
 
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'following_id' })
   following: UserEntity;
 
   @Column({ name: 'created_at', type: 'timestamptz', default: () => 'now()' })

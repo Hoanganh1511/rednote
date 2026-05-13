@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, IsNull } from 'typeorm';
 import { UserEntity } from './user.entity';
@@ -58,7 +63,9 @@ export class UsersService {
         const daysElapsed = msElapsed / (1000 * 60 * 60 * 24);
         if (daysElapsed < 7) {
           const daysLeft = Math.ceil(7 - daysElapsed);
-          throw new BadRequestException(`Username chỉ được đổi 1 lần / 7 ngày. Còn ${daysLeft} ngày nữa.`);
+          throw new BadRequestException(
+            `Username chỉ được đổi 1 lần / 7 ngày. Còn ${daysLeft} ngày nữa.`,
+          );
         }
       }
     }
@@ -104,7 +111,10 @@ export class UsersService {
   }
 
   async setPasswordResetToken(id: string, token: string, expiresAt: Date): Promise<void> {
-    await this.userRepo.update(id, { passwordResetToken: token, passwordResetExpiresAt: expiresAt });
+    await this.userRepo.update(id, {
+      passwordResetToken: token,
+      passwordResetExpiresAt: expiresAt,
+    });
   }
 
   async clearPasswordResetToken(id: string): Promise<void> {
@@ -112,15 +122,13 @@ export class UsersService {
   }
 
   async follow(followerId: string, followingId: string): Promise<void> {
+    console.log(9999, { followerId, followingId });
     if (followerId === followingId) {
       throw new BadRequestException('Không thể theo dõi chính mình');
     }
 
     // Check if both users exist
-    await Promise.all([
-      this.findById(followerId),
-      this.findById(followingId),
-    ]);
+    await Promise.all([this.findById(followerId), this.findById(followingId)]);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -144,11 +152,7 @@ export class UsersService {
 
       if (softDeleted) {
         // Restore soft-deleted follow
-        await queryRunner.manager.update(
-          FollowEntity,
-          { id: softDeleted.id },
-          { deletedAt: null },
-        );
+        await queryRunner.manager.update(FollowEntity, { id: softDeleted.id }, { deletedAt: null });
       } else {
         // Create new follow
         const follow = queryRunner.manager.create(FollowEntity, {
@@ -195,11 +199,7 @@ export class UsersService {
       }
 
       // Soft delete
-      await queryRunner.manager.update(
-        FollowEntity,
-        { id: follow.id },
-        { deletedAt: new Date() },
-      );
+      await queryRunner.manager.update(FollowEntity, { id: follow.id }, { deletedAt: new Date() });
 
       // Update counters atomically
       await queryRunner.manager.update(
