@@ -23,7 +23,6 @@ interface RetryableConfig extends InternalAxiosRequestConfig {
 
 export const apiClient = axios.create({
   baseURL: CLIENT_API_BASE,
-  headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
 
