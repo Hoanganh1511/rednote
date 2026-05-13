@@ -9,10 +9,10 @@ export class FollowEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('uuid')
+  @Column({ name: 'follower_id', type: 'uuid' })
   followerId: string;
 
-  @Column('uuid')
+  @Column({ name: 'following_id', type: 'uuid' })
   followingId: string;
 
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
