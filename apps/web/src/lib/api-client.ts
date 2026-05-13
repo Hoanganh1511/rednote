@@ -40,6 +40,10 @@ apiClient.interceptors.request.use((config) => {
       }
     }
   }
+  // Don't send Content-Type for requests without body (e.g., follow endpoint)
+  if (!config.data) {
+    delete config.headers['Content-Type'];
+  }
   return config;
 });
 
