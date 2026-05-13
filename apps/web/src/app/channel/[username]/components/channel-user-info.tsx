@@ -19,6 +19,8 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
   const currentUser = useCurrentUser();
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
+  const [openStatPopup, setOpenStatPopup] = useState<'followers' | 'following' | 'likes' | null>(null);
   const displayName = user.displayName || user.username;
 
   // Check if current user is following this user
@@ -38,7 +40,14 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
 
   const handleFollowClick = async () => {
     if (!currentUser) return;
+    if (isFollowing) {
+      setShowUnfollowConfirm(true);
+      return;
+    }
+    await performFollow();
+  };
 
+  const performFollow = async () => {
     setIsLoading(true);
     try {
       if (isFollowing) {
@@ -51,6 +60,7 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
       // Handle error silently
     } finally {
       setIsLoading(false);
+      setShowUnfollowConfirm(false);
     }
   };
 
@@ -78,26 +88,35 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
         <div className="w-[50vw] pt-2 flex flex-col gap-2.5 ml-auto">
           {/* Stats */}
           <div className="flex items-center">
-            <div className="flex-1 text-center">
+            <button
+              onClick={() => setOpenStatPopup('followers')}
+              className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
+            >
               <div className="text-[13px] font-bold leading-tight text-foreground">
                 {formatCount(user.followerCount)}
               </div>
               <div className="text-[9px] text-muted-foreground mt-0.5">Followers</div>
-            </div>
+            </button>
             <div className="w-px h-6 bg-border" />
-            <div className="flex-1 text-center">
+            <button
+              onClick={() => setOpenStatPopup('following')}
+              className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
+            >
               <div className="text-[13px] font-bold leading-tight text-foreground">
                 {formatCount(user.followingCount)}
               </div>
-              <div className="text-[9px] text-muted-foreground mt-0.5">Follow</div>
-            </div>
+              <div className="text-[9px] text-muted-foreground mt-0.5">Following</div>
+            </button>
             <div className="w-px h-6 bg-border" />
-            <div className="flex-1 text-center">
+            <button
+              onClick={() => setOpenStatPopup('likes')}
+              className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
+            >
               <div className="text-[13px] font-bold leading-tight text-foreground">
                 {formatCount(user.totalLikesReceived)}
               </div>
               <div className="text-[9px] text-muted-foreground mt-0.5">Likes</div>
-            </div>
+            </button>
           </div>
 
           {/* Follow button */}
@@ -111,11 +130,62 @@ export function ChannelUserInfo({ user }: ChannelUserInfoProps) {
                   : 'bg-[#00aeec] text-white hover:bg-[#00aeec]/90'
               }`}
             >
-              {isFollowing ? '✓ Đang theo dõi' : '+ Theo dõi'}
+              {isFollowing ? '✓ Following' : '+ Follow'}
             </button>
           ) : null}
         </div>
       </div>
+
+      {/* Unfollow confirmation dialog */}
+      {showUnfollowConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-lg border border-border p-6 shadow-lg max-w-sm mx-4">
+            <h2 className="text-base font-semibold text-foreground mb-2">
+              Hủy theo dõi {displayName}?
+            </h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Bạn sẽ không thể nhìn thấy các bài đăng mới từ người này trong luồng của bạn.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowUnfollowConfirm(false)}
+                className="flex-1 px-4 py-2 rounded border border-border text-foreground hover:bg-accent transition-colors text-sm font-medium"
+              >
+                Huỷ
+              </button>
+              <button
+                onClick={performFollow}
+                disabled={isLoading}
+                className="flex-1 px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors text-sm font-medium"
+              >
+                {isLoading ? 'Đang hủy...' : 'Hủy theo dõi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats popup modal */}
+      {openStatPopup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setOpenStatPopup(null)}
+        >
+          <div
+            className="bg-background rounded-lg border border-border p-6 shadow-lg max-w-sm mx-4 max-h-[70vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-base font-semibold text-foreground mb-4 capitalize">
+              {openStatPopup === 'followers' && 'Followers'}
+              {openStatPopup === 'following' && 'Following'}
+              {openStatPopup === 'likes' && 'Likes'}
+            </h2>
+            <div className="text-sm text-muted-foreground text-center py-8">
+              Tính năng này sẽ sớm được thêm vào
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

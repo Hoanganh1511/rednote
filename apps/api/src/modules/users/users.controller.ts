@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -12,6 +12,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
   @ApiOperation({ summary: 'Get current user profile' })
   async getMe(@CurrentUser() user: UserEntity): Promise<UserEntity> {
     return user;
@@ -28,6 +29,7 @@ export class UsersController {
 
   @Public()
   @Get('by-username/:username')
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
   @ApiOperation({ summary: 'Get user by username (public)' })
   async getUserByUsername(@Param('username') username: string): Promise<UserEntity> {
     return this.usersService.findByUsernamePublic(username);
@@ -40,37 +42,34 @@ export class UsersController {
   }
 
   @Post(':id/follow')
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
   @ApiOperation({ summary: 'Follow a user' })
   async followUser(
     @CurrentUser() user: UserEntity,
     @Param('id') followingId: string,
   ): Promise<{ isFollowing: boolean }> {
-    console.log('🔵 Follow endpoint:', { user, followingId });
-    console.log('🔵 User keys:', Object.keys(user || {}));
     await this.usersService.follow(user.id, followingId);
     return { isFollowing: true };
   }
 
   @Delete(':id/follow')
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
   @ApiOperation({ summary: 'Unfollow a user' })
   async unfollowUser(
     @CurrentUser() user: UserEntity,
     @Param('id') followingId: string,
   ): Promise<{ isFollowing: boolean }> {
-    console.log('🔴 Unfollow endpoint reached', { userId: user?.id, followingId });
     await this.usersService.unfollow(user.id, followingId);
     return { isFollowing: false };
   }
 
-  @Public()
   @Get(':id/is-following')
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
   @ApiOperation({ summary: 'Check if current user is following another user' })
   async isFollowing(
-    @CurrentUser() user: UserEntity | null,
+    @CurrentUser() user: UserEntity,
     @Param('id') followingId: string,
   ): Promise<{ isFollowing: boolean }> {
-    console.log('🟢 Is-following endpoint reached', { userId: user?.id, followingId });
-    if (!user) return { isFollowing: false };
     const isFollowing = await this.usersService.isFollowing(user.id, followingId);
     return { isFollowing };
   }
