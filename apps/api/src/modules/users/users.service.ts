@@ -162,17 +162,20 @@ export class UsersService {
         await queryRunner.manager.save(follow);
       }
 
-      // Update counters atomically
-      await queryRunner.manager.update(
-        UserEntity,
-        { id: followerId },
-        { followingCount: () => 'following_count + 1' },
-      );
-      await queryRunner.manager.update(
-        UserEntity,
-        { id: followingId },
-        { followerCount: () => 'follower_count + 1' },
-      );
+      // Update counters atomically using query builder
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(UserEntity)
+        .set({ followingCount: () => 'following_count + 1' })
+        .where('id = :id', { id: followerId })
+        .execute();
+
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(UserEntity)
+        .set({ followerCount: () => 'follower_count + 1' })
+        .where('id = :id', { id: followingId })
+        .execute();
 
       await queryRunner.commitTransaction();
     } catch (err) {
@@ -201,17 +204,20 @@ export class UsersService {
       // Soft delete
       await queryRunner.manager.update(FollowEntity, { id: follow.id }, { deletedAt: new Date() });
 
-      // Update counters atomically
-      await queryRunner.manager.update(
-        UserEntity,
-        { id: followerId },
-        { followingCount: () => 'following_count - 1' },
-      );
-      await queryRunner.manager.update(
-        UserEntity,
-        { id: followingId },
-        { followerCount: () => 'follower_count - 1' },
-      );
+      // Update counters atomically using query builder
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(UserEntity)
+        .set({ followingCount: () => 'following_count - 1' })
+        .where('id = :id', { id: followerId })
+        .execute();
+
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(UserEntity)
+        .set({ followerCount: () => 'follower_count - 1' })
+        .where('id = :id', { id: followingId })
+        .execute();
 
       await queryRunner.commitTransaction();
     } catch (err) {
