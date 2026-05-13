@@ -21,9 +21,9 @@ export class FollowEntity {
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   following: UserEntity;
 
-  @Column({ type: 'timestamptz', default: () => 'now()' })
+  @Column({ name: 'created_at', type: 'timestamptz', default: () => 'now()' })
   createdAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
   deletedAt: Date | null;
 }
