@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Zap } from 'lucide-react';
 import type { User, PostFeedPage } from 'shared-types';
 import { Dialog } from '@/components/ui/dialog';
 import { apiClient } from '@/lib/api-client';
@@ -93,7 +92,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
     setFollowingOptionsIn(false);
     setTimeout(() => {
       setFollowingOptionsOpen(false);
-    }, 520);
+    }, 500);
   };
 
   return (
@@ -162,20 +161,20 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
       {/* Following options bottom sheet drawer — rendered at viewport level */}
       {isFollowing && followingOptionsOpen ? (
         <div
-          className={`fixed inset-0 z-50 transition-opacity duration-[200ms] ${
-            followingOptionsIn ? 'opacity-100' : 'opacity-0'
-          }`}
+          className={`fixed inset-0 z-50`}
           style={{
+            transitionDuration: '200ms',
             transitionTimingFunction: 'cubic-bezier(0.25, 0.8, 0.25, 1)',
             pointerEvents: followingOptionsIn ? 'auto' : 'none',
           }}
         >
           {/* Backdrop */}
           <div
-            className={`fixed inset-0 bg-black/50 transition-opacity duration-[520ms] ${
+            className={`fixed inset-0 bg-black/50 transition-opacity ${
               followingOptionsIn ? 'opacity-100' : 'opacity-0'
             }`}
             style={{
+              transitionDuration: '500ms',
               transitionTimingFunction: 'cubic-bezier(0.25, 0.8, 0.25, 1)',
             }}
             onClick={closeFollowingOptions}
@@ -183,18 +182,20 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
 
           {/* Bottom sheet */}
           <div
-            className={`bg-background border-border fixed right-0 bottom-0 left-0 z-50 rounded-t-lg border border-b-0 shadow-lg transition duration-[520ms] will-change-transform ${
-              followingOptionsIn ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+            className={`bg-background border-border fixed right-0 bottom-0 left-0 z-50 rounded-t-lg border border-b-0 shadow-lg transition-transform will-change-transform ${
+              followingOptionsIn ? 'translate-y-0' : 'translate-y-full'
             }`}
             style={{
+              transitionDuration: '500ms',
               transitionTimingFunction: 'cubic-bezier(0.25, 0.8, 0.25, 1)',
             }}
           >
-            <div className="flex-1 px-[15px] py-4">
+            <div className="flex-1 px-[15px] py-2">
               {/* Option: Special Follow */}
               <button
                 onClick={() => {}}
-                className="text-foreground w-full py-3 text-left text-sm transition-opacity hover:opacity-70"
+                className="text-foreground w-full text-left text-sm transition-opacity hover:opacity-70"
+                style={{ paddingTop: '12px', paddingBottom: '12px' }}
               >
                 Thêm người này vào danh sách Special Follow
               </button>
@@ -203,7 +204,8 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
               {/* Option: Unfollow - shows confirmation */}
               <button
                 onClick={() => setShowUnfollowConfirm(true)}
-                className="w-full py-3 text-left text-sm text-red-600 transition-opacity hover:opacity-70"
+                className="w-full text-left text-sm text-red-600 transition-opacity hover:opacity-70"
+                style={{ paddingTop: '12px', paddingBottom: '12px' }}
               >
                 Unfollow
               </button>
@@ -227,7 +229,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
       <Dialog
         open={showUnfollowConfirm}
         onClose={() => setShowUnfollowConfirm(false)}
-        title="Xác nhận hủy theo dõi?"
+        title="Hủy theo dõi?"
         actions={[
           {
             label: 'Hủy',
@@ -246,7 +248,7 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
           },
         ]}
       >
-        Bạn sẽ không còn nhận được cập nhật từ {profileData.displayName || profileData.username}
+        Bạn sẽ không còn nhận được thông tin về {profileData.displayName || profileData.username}
       </Dialog>
 
       {/* Stats drawer — viewport level to avoid clipping */}

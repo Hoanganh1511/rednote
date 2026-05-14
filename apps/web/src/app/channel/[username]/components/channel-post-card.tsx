@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Share2, MessageCircle, ThumbsUp, MoreVertical } from 'lucide-react';
+import { Share2, MessageSquareText, ThumbsUp, MoreVertical } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { PostFeedItem } from 'shared-types';
@@ -47,9 +47,9 @@ export function ChannelPostCard({ post, onPostLikeChange }: ChannelPostCardProps
   const timeLabel = formatRelativeTimeVi(post.publishedAt ?? post.createdAt);
 
   return (
-    <article className="border-border/60 bg-background border-b">
+    <article className="border-border/20 bg-background border-b">
       {/* Author row */}
-      <div className="flex items-center gap-2.5 px-3 pb-2 pt-3">
+      <div className="flex items-center gap-2.5 pt-3 pb-2">
         <Link href={author ? ROUTES.CHANNEL(author.username) : ROUTES.HOME} className="shrink-0">
           <span className="ring-background flex h-9 w-9 overflow-hidden rounded-full bg-[#00A1D6] text-xs font-semibold text-white ring-2">
             {author?.avatarUrl ? (
@@ -139,29 +139,27 @@ export function ChannelPostCard({ post, onPostLikeChange }: ChannelPostCardProps
               fill={likedByMe ? 'currentColor' : 'none'}
             />
           </button>
-          <button
-            onClick={() => likeCount > 0 && setLikersDrawerOpen(true)}
-            disabled={likeCount === 0}
-            className="text-[13px] font-medium tabular-nums text-[#00A1D6] hover:underline disabled:opacity-50 disabled:hover:no-underline"
-          >
-            {likeCount}
-          </button>
-          <button
-            onClick={() => likeCount > 0 && setLikersDrawerOpen(true)}
-            disabled={likeCount === 0}
-            className="text-[13px] font-medium tabular-nums text-[#00A1D6] hover:underline disabled:opacity-50 disabled:hover:no-underline"
-          >
-            {likeCount}
-          </button>
+          {likeCount > 0 && (
+            <button
+              onClick={() => setLikersDrawerOpen(true)}
+              className="text-[13px] font-medium text-[#00A1D6] tabular-nums hover:underline"
+            >
+              {likeCount}
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => openDrawer(post, { focusComments: true })}
             className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors"
           >
-            <MessageCircle className="h-5 w-5" strokeWidth={1.75} />
+            <MessageSquareText className="h-5 w-5" strokeWidth={1.75} />
           </button>
-          <span className="text-[13px] font-medium tabular-nums text-muted-foreground">{post.commentCount ?? 0}</span>
+          {(post.commentCount ?? 0) > 0 && (
+            <span className="text-[13px] font-medium text-[#00A1D6] tabular-nums">
+              {post.commentCount}
+            </span>
+          )}
         </div>
         <button className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors">
           <Share2 className="h-5 w-5" strokeWidth={1.75} />

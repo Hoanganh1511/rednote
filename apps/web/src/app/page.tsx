@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { SiteLayout } from '@/components/layout/site-layout';
-import { LatestVideosSection } from '@/components/home/featured-sections';
 import { PostsFeedSection } from '@/components/home/posts-feed-section';
 import { PostsFeedSkeleton } from '@/components/home/posts-feed-skeleton';
 
@@ -20,8 +19,6 @@ export default function HomePage() {
         <Suspense fallback={<PostsFeedSkeleton />}>
           <PostsFeedSection />
         </Suspense>
-
-        <LatestVideosSection />
       </div>
     </SiteLayout>
   );

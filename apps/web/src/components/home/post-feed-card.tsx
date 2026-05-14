@@ -95,7 +95,7 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
   return (
     <article
       className={cn(
-        'border-border/60 bg-background text-card-foreground flex flex-col border-b',
+        'border-border/20 bg-background text-card-foreground flex flex-col border-b',
         'max-sm:rounded-none max-sm:border-x-0 max-sm:shadow-none',
         'sm:overflow-hidden sm:rounded-lg sm:shadow-none',
         className,
@@ -162,6 +162,8 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
                   try {
                     await apiClient.post(`/users/${post.userId}/follow`);
                     setIsFollowingAuthor(true);
+                    // Notify other components to refetch user data
+                    window.dispatchEvent(new CustomEvent('userFollowed', { detail: { userId: post.userId } }));
                   } catch {
                     toast.message('Không thực hiện được. Thử lại sau.');
                   } finally {
@@ -288,13 +290,14 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
                 fill={likedByMe ? 'currentColor' : 'none'}
               />
             </button>
-            <button
-              onClick={() => likeCount > 0 && setLikersDrawerOpen(true)}
-              disabled={likeCount === 0}
-              className="text-[13px] font-medium tabular-nums text-[#00A1D6] hover:underline disabled:opacity-50 disabled:hover:no-underline"
-            >
-              {likeCount}
-            </button>
+            {likeCount > 0 && (
+              <button
+                onClick={() => setLikersDrawerOpen(true)}
+                className="text-[13px] font-medium text-[#00A1D6] tabular-nums hover:underline"
+              >
+                {likeCount}
+              </button>
+            )}
           </div>
           <button
             type="button"
@@ -303,7 +306,9 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
             className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-1.5 rounded-full px-2 py-1.5 transition-colors"
           >
             <MessageCircle className="h-5 w-5" strokeWidth={1.75} />
-            <span className="text-[13px] font-medium tabular-nums">{commentCount}</span>
+            {commentCount > 0 && (
+              <span className="text-[13px] font-medium text-[#00A1D6] tabular-nums">{commentCount}</span>
+            )}
           </button>
           <button
             type="button"
@@ -346,6 +351,8 @@ export function PostFeedCard({ post, priority = false, className }: PostFeedCard
                     setIsFollowingAuthor(false);
                     setFollowDrawerIn(false);
                     setTimeout(() => setFollowDrawerOpen(false), 300);
+                    // Notify other components to refetch user data
+                    window.dispatchEvent(new CustomEvent('userUnfollowed', { detail: { userId: post.userId } }));
                   } catch {
                     toast.message('Không thực hiện được. Thử lại sau.');
                   } finally {

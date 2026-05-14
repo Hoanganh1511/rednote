@@ -84,7 +84,6 @@ export default function AccountHomePage() {
           {/* Stats row */}
           <div className="mt-3 flex items-center border-t border-border pt-3">
             {([
-              { label: 'Bài đăng', value: user?.videoCount ?? 0 },
               { label: 'Đang theo dõi', value: user?.followingCount ?? 0 },
               { label: 'Người theo dõi', value: user?.followerCount ?? 0 },
             ] as const).map(({ label, value }, i) => (

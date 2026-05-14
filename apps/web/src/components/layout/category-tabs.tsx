@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { motion } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import type { HomeNavTabSnippet } from 'shared-types';
 import { SITE_MAIN_CONTENT_CLASS } from '@/constants';
@@ -30,6 +31,9 @@ export function CategoryTabs() {
   }, [data, isError]);
 
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
+  const [underlineX, setUnderlineX] = useState(0);
+  const [underlineWidth, setUnderlineWidth] = useState(20);
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   useEffect(() => {
     if (tabs.length === 0) return;
@@ -37,6 +41,22 @@ export function CategoryTabs() {
   }, [tabs]);
 
   const active = activeSlug ?? tabs[0]?.slug ?? 'posts';
+
+  useEffect(() => {
+    const activeButton = tabRefs.current[active];
+    if (activeButton && activeButton.parentElement) {
+      const buttonWidth = activeButton.offsetWidth;
+      const buttonLeft = activeButton.offsetLeft;
+      const parentPaddingLeft = parseInt(
+        window.getComputedStyle(activeButton.parentElement).paddingLeft,
+        10,
+      );
+
+      const x = buttonLeft - parentPaddingLeft + (buttonWidth - 20) / 2;
+      setUnderlineX(x);
+      setUnderlineWidth(20);
+    }
+  }, [active]);
 
   return (
     <div className="sticky top-16 z-sticky-sub bg-white shadow-none">
@@ -53,17 +73,27 @@ export function CategoryTabs() {
             return (
               <button
                 key={tab.id}
+                ref={(el) => {
+                  if (el) tabRefs.current[tab.slug] = el;
+                }}
                 type="button"
                 onClick={() => setActiveSlug(tab.slug)}
                 className={cn(
-                  'shrink-0 px-2.5 py-2 text-sm font-medium whitespace-nowrap transition-colors sm:px-3',
-                  isActive ? 'font-semibold text-[#00aeec]' : 'text-muted-foreground hover:text-foreground',
+                  'relative shrink-0 px-2.5 py-2 whitespace-nowrap transition-colors sm:px-3',
+                  isActive ? 'text-[16px] font-semibold text-[#00A1D6]' : 'text-[15px] font-normal text-muted-foreground hover:text-foreground',
                 )}
               >
                 {tab.label}
               </button>
             );
           })}
+          {/* Animated underline */}
+          <motion.div
+            className="absolute bottom-0 h-[3px] bg-[#00A1D6] rounded-full"
+            style={{ width: underlineWidth }}
+            animate={{ x: underlineX }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          />
         </div>
       </div>
     </div>

@@ -40,42 +40,42 @@ export function ChannelStatsDrawer({ open, onClose, user }: ChannelStatsDrawerPr
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (activeTab === 'followers') {
-          const response = await apiClient.get(`/users/${user.id}/followers`);
-          const followersList = response.data?.items || [];
-          setFollowers(followersList);
+        // Load both followers and following data upfront
+        const [followersResponse, followingResponse] = await Promise.all([
+          apiClient.get(`/users/${user.id}/followers`),
+          apiClient.get(`/users/${user.id}/following`),
+        ]);
 
+        const followersList = followersResponse.data?.items || [];
+        const followingList = followingResponse.data?.items || [];
+
+        setFollowers(followersList);
+        setFollowing(followingList);
+
+        if (currentUser) {
           // Check following status for each follower
-          if (currentUser) {
-            const statusMap = new Map<string, boolean>();
-            for (const follower of followersList) {
-              try {
-                const checkResponse = await apiClient.get(`/users/${follower.id}/is-following`);
-                statusMap.set(follower.id, checkResponse.data?.isFollowing ?? false);
-              } catch {
-                statusMap.set(follower.id, false);
-              }
+          const statusMap = new Map<string, boolean>();
+          for (const follower of followersList) {
+            try {
+              const checkResponse = await apiClient.get(`/users/${follower.id}/is-following`);
+              statusMap.set(follower.id, checkResponse.data?.isFollowing ?? false);
+            } catch {
+              statusMap.set(follower.id, false);
             }
-            setFollowingStatus(statusMap);
           }
-        } else if (activeTab === 'following') {
-          const response = await apiClient.get(`/users/${user.id}/following`);
-          const followingList = response.data?.items || [];
-          setFollowing(followingList);
+          setFollowingStatus(statusMap);
 
           // Check if each following person follows back
-          if (currentUser) {
-            const followsBackMap = new Map<string, boolean>();
-            for (const followedUser of followingList) {
-              try {
-                const checkResponse = await apiClient.get(`/users/${followedUser.id}/is-following`);
-                followsBackMap.set(followedUser.id, checkResponse.data?.isFollowing ?? false);
-              } catch {
-                followsBackMap.set(followedUser.id, false);
-              }
+          const followsBackMap = new Map<string, boolean>();
+          for (const followedUser of followingList) {
+            try {
+              const checkResponse = await apiClient.get(`/users/${followedUser.id}/is-following`);
+              followsBackMap.set(followedUser.id, checkResponse.data?.isFollowing ?? false);
+            } catch {
+              followsBackMap.set(followedUser.id, false);
             }
-            setFollowerFollowsBack(followsBackMap);
           }
+          setFollowerFollowsBack(followsBackMap);
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -85,7 +85,7 @@ export function ChannelStatsDrawer({ open, onClose, user }: ChannelStatsDrawerPr
     };
 
     fetchData();
-  }, [open, activeTab, user.id, currentUser]);
+  }, [open, user.id, currentUser]);
 
   const getSortLabel = () => {
     return SORT_OPTIONS.find(opt => opt.id === sortOption)?.label || 'Mặc định';
@@ -129,8 +129,8 @@ export function ChannelStatsDrawer({ open, onClose, user }: ChannelStatsDrawerPr
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {tab === 'following' && `Đang theo dõi (${user.followingCount})`}
-              {tab === 'followers' && `Người theo dõi (${user.followerCount})`}
+              {tab === 'following' && `Đang theo dõi (${following.length || user.followingCount})`}
+              {tab === 'followers' && `Người theo dõi (${followers.length || user.followerCount})`}
             </button>
           ))}
         </div>

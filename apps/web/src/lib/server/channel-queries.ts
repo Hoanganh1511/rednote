@@ -5,7 +5,9 @@ import { fetchApiEnvelope } from '@/lib/server/api-envelope';
 /** Get user by username (public). */
 export async function getUserByUsername(username: string): Promise<User> {
   return fetchApiEnvelope<User>(`/users/by-username/${username}`, {
-    next: { revalidate: 300, tags: [`user-${username}`] },
+    ...(process.env.NODE_ENV === 'development'
+      ? { cache: 'no-store' as const }
+      : { next: { revalidate: 60, tags: [`user-${username}`] } }),
   });
 }
 

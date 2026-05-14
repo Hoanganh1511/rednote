@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Menu } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Menu } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { User } from 'shared-types';
 import { useCurrentUser } from '@/hooks/use-auth';
@@ -49,7 +49,7 @@ export function ChannelUserInfo({
   const lastRefreshRef = useRef<number>(0);
 
   // Refetch user data from server to verify counts
-  const refetchUserData = async () => {
+  const refetchUserData = useCallback(async () => {
     try {
       const response = await apiClient.get<User>(`/users/${user.id}`);
       const freshData = response.data;
@@ -61,7 +61,7 @@ export function ChannelUserInfo({
     } catch {
       // Silent fail - keep optimistic updates
     }
-  };
+  }, [user.id, onUserDataRefresh]);
 
   // Initial load: check following status and set up periodic sync
   useEffect(() => {
@@ -105,8 +105,33 @@ export function ChannelUserInfo({
       await performFollow();
     };
     window.addEventListener('performUnfollow', handlePerformUnfollow as EventListener);
-    return () => window.removeEventListener('performUnfollow', handlePerformUnfollow as EventListener);
+    return () =>
+      window.removeEventListener('performUnfollow', handlePerformUnfollow as EventListener);
   }, [isFollowing]);
+
+  // Listen for follow/unfollow events from other components to refetch user data
+  useEffect(() => {
+    const handleUserFollowed = (e: Event) => {
+      const event = e as CustomEvent;
+      if (event.detail?.userId === user.id) {
+        // Delay slightly to ensure server has processed the request
+        setTimeout(() => refetchUserData(), 200);
+      }
+    };
+    const handleUserUnfollowed = (e: Event) => {
+      const event = e as CustomEvent;
+      if (event.detail?.userId === user.id) {
+        setTimeout(() => refetchUserData(), 200);
+      }
+    };
+
+    window.addEventListener('userFollowed', handleUserFollowed);
+    window.addEventListener('userUnfollowed', handleUserUnfollowed);
+    return () => {
+      window.removeEventListener('userFollowed', handleUserFollowed);
+      window.removeEventListener('userUnfollowed', handleUserUnfollowed);
+    };
+  }, [user.id, refetchUserData]);
 
   const handleFollowClick = async () => {
     if (!currentUser) return;
@@ -167,15 +192,15 @@ export function ChannelUserInfo({
     <div className="relative z-10">
       <div className="flex items-start gap-3">
         {/* Avatar — overlap cover by 33px */}
-        <div className="shrink-0 -mt-[33px]">
+        <div className="-mt-[33px] shrink-0">
           {user.avatarUrl ? (
             <img
               src={user.avatarUrl}
               alt={displayName}
-              className="h-24 w-24 rounded-full border-[3px] border-background object-cover shadow-md"
+              className="border-background h-24 w-24 rounded-full border-[3px] object-cover shadow-md"
             />
           ) : (
-            <div className="h-24 w-24 rounded-full border-[3px] border-background bg-[#00aeec] flex items-center justify-center shadow-md">
+            <div className="border-background flex h-24 w-24 items-center justify-center rounded-full border-[3px] bg-[#00aeec] shadow-md">
               <span className="text-2xl font-bold text-white">
                 {displayName.charAt(0).toUpperCase()}
               </span>
@@ -184,37 +209,37 @@ export function ChannelUserInfo({
         </div>
 
         {/* Stats + Follow button — ~half screen width */}
-        <div className="w-[50vw] pt-2 flex flex-col gap-2 ml-auto">
+        <div className="ml-auto flex w-[50vw] flex-col gap-2 pt-2">
           {/* Stats */}
           <div className="flex items-center">
             <button
               onClick={() => onStatsClick?.()}
-              className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
+              className="flex-1 cursor-pointer text-center transition-opacity hover:opacity-70"
             >
-              <div className="text-[15px] font-medium leading-tight text-foreground">
+              <div className="text-foreground text-[15px] leading-tight font-medium">
                 {formatCount(followerCount)}
               </div>
-              <div className="text-[9px] text-muted-foreground mt-0.5">Người theo dõi</div>
+              <div className="text-muted-foreground mt-0.5 text-[9px]">Người theo dõi</div>
             </button>
-            <div className="w-px h-6 bg-border" />
+            <div className="bg-border h-6 w-px" />
             <button
               onClick={() => onStatsClick?.()}
-              className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
+              className="flex-1 cursor-pointer text-center transition-opacity hover:opacity-70"
             >
-              <div className="text-[15px] font-medium leading-tight text-foreground">
+              <div className="text-foreground text-[15px] leading-tight font-medium">
                 {formatCount(followingCount)}
               </div>
-              <div className="text-[9px] text-muted-foreground mt-0.5">Đang theo dõi</div>
+              <div className="text-muted-foreground mt-0.5 text-[9px]">Đang theo dõi</div>
             </button>
-            <div className="w-px h-6 bg-border" />
+            <div className="bg-border h-6 w-px" />
             <button
               onClick={() => onStatsClick?.()}
-              className="flex-1 text-center hover:opacity-70 transition-opacity cursor-pointer"
+              className="flex-1 cursor-pointer text-center transition-opacity hover:opacity-70"
             >
-              <div className="text-[15px] font-medium leading-tight text-foreground">
+              <div className="text-foreground text-[15px] leading-tight font-medium">
                 {formatCount(totalLikesReceived)}
               </div>
-              <div className="text-[9px] text-muted-foreground mt-0.5">Lượt thích</div>
+              <div className="text-muted-foreground mt-0.5 text-[9px]">Lượt thích</div>
             </button>
           </div>
 
@@ -222,7 +247,7 @@ export function ChannelUserInfo({
           {currentUser && currentUser.id === user.id ? (
             <button
               onClick={onEditProfileClick}
-              className="flex-1 rounded py-1.5 text-xs font-semibold border-2 border-[#00aeec] text-[#00aeec] bg-transparent hover:bg-[#00aeec]/10 transition-colors active:opacity-80 flex items-center justify-center"
+              className="flex flex-1 items-center justify-center rounded border-2 border-[#00aeec] bg-transparent py-1.5 text-xs font-semibold text-[#00aeec] transition-colors hover:bg-[#00aeec]/10 active:opacity-80"
             >
               Chỉnh sửa hồ sơ
             </button>
@@ -231,7 +256,7 @@ export function ChannelUserInfo({
               <button
                 onClick={handleFollowClick}
                 disabled={isLoading}
-                className={`flex-1 rounded py-1.5 text-xs font-semibold transition-colors active:opacity-80 disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded py-1.5 text-xs font-semibold transition-colors active:opacity-80 disabled:opacity-50 ${
                   isFollowing
                     ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     : 'bg-[#00aeec] text-white hover:bg-[#00aeec]/90'
@@ -239,7 +264,7 @@ export function ChannelUserInfo({
               >
                 {isFollowing ? (
                   <>
-                    <Menu className="w-4 h-4" />
+                    <Menu className="h-4 w-4" />
                     Đang theo dõi
                   </>
                 ) : (
@@ -249,10 +274,10 @@ export function ChannelUserInfo({
               {isFollowing && (
                 <button
                   onClick={() => {}}
-                  className="rounded py-1.5 px-3 text-xs font-semibold bg-gray-100 text-gray-700 transition-colors active:opacity-80 hover:bg-gray-200 flex items-center justify-center"
+                  className="flex items-center justify-center rounded bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 active:opacity-80"
                   title="Gửi tin nhắn"
                 >
-                  <MessageCircle className="w-4 h-4" />
+                  Nhắn tin
                 </button>
               )}
             </div>
