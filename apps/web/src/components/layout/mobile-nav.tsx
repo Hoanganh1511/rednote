@@ -9,6 +9,7 @@ import { MobileCreateMenu } from '@/components/layout/mobile-create-menu';
 import { LoginRequiredModal } from '@/components/auth/login-required-modal';
 import { ROUTES, SITE_MAIN_CONTENT_CLASS } from '@/constants';
 import { ComingSoonBadge } from '@/components/ui/coming-soon-badge';
+import { useNotificationUnreadCounts } from '@/hooks/use-notifications';
 
 const SIDE_ITEMS = [
   { label: 'Trang chủ', href: ROUTES.HOME, icon: Home, match: (p: string) => p === '/', comingSoon: false },
@@ -21,7 +22,7 @@ const SIDE_ITEMS_RIGHT = [
     href: '/notifications',
     icon: Bell,
     match: (p: string) => p.startsWith('/notifications'),
-    comingSoon: true,
+    comingSoon: false,
   },
   { label: 'Tôi', href: '/account/home', icon: User, match: (p: string) => p.startsWith('/account'), comingSoon: false },
 ] as const;
@@ -34,6 +35,8 @@ export function MobileNav({ className }: MobileNavProps) {
   const pathname = usePathname();
   const [createOpen, setCreateOpen] = useState(false);
   const [loginRequiredOpen, setLoginRequiredOpen] = useState(false);
+  const { data: unreadCounts } = useNotificationUnreadCounts();
+  const notifUnread = unreadCounts?.total ?? 0;
 
   const handleLoginRequired = () => {
     setCreateOpen(false);
@@ -98,6 +101,7 @@ export function MobileNav({ className }: MobileNavProps) {
           <div className="flex min-w-0 flex-1 justify-evenly">
             {SIDE_ITEMS_RIGHT.map(({ label, href, icon: Icon, match, comingSoon }) => {
               const active = match(pathname);
+              const isNotif = href === '/notifications';
               return (
                 <Link
                   key={href}
@@ -107,7 +111,14 @@ export function MobileNav({ className }: MobileNavProps) {
                     active ? 'text-[#00A1D6]' : 'text-muted-foreground hover:text-foreground',
                   )}
                 >
-                  <Icon className={cn('h-[18px] w-[18px] shrink-0', active && 'stroke-[2.5]')} />
+                  <div className="relative">
+                    <Icon className={cn('h-[18px] w-[18px] shrink-0', active && 'stroke-[2.5]')} />
+                    {isNotif && notifUnread > 0 && (
+                      <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white leading-none">
+                        {notifUnread > 99 ? '99+' : notifUnread}
+                      </span>
+                    )}
+                  </div>
                   <span className="line-clamp-1 text-center text-[9px] font-medium leading-none">
                     {label}
                   </span>

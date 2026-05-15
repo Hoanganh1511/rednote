@@ -8,7 +8,7 @@ import { ChannelPostCard } from './channel-post-card';
 interface ChannelPostListProps {
   userId: string;
   initialPosts: PostFeedPage;
-  onAuthorStatsChange?: () => void; // Callback when post likes change
+  onAuthorStatsChange?: () => void;
 }
 
 export function ChannelPostList({ userId, initialPosts, onAuthorStatsChange }: ChannelPostListProps) {
@@ -16,7 +16,16 @@ export function ChannelPostList({ userId, initialPosts, onAuthorStatsChange }: C
   const [total, setTotal] = useState(initialPosts.total);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const loadMore = useCallback(async () => {
     if (isLoading || items.length >= total) return;
@@ -32,10 +41,7 @@ export function ChannelPostList({ userId, initialPosts, onAuthorStatsChange }: C
         const seen = new Set(prev.map((p) => p.id));
         const merged = [...prev];
         for (const p of res.data.items) {
-          if (!seen.has(p.id)) {
-            seen.add(p.id);
-            merged.push(p);
-          }
+          if (!seen.has(p.id)) { seen.add(p.id); merged.push(p); }
         }
         return merged;
       });
@@ -48,9 +54,7 @@ export function ChannelPostList({ userId, initialPosts, onAuthorStatsChange }: C
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) void loadMore();
-      },
+      (entries) => { if (entries[0]?.isIntersecting) void loadMore(); },
       { threshold: 0.1 },
     );
     if (sentinelRef.current) observer.observe(sentinelRef.current);
@@ -67,11 +71,12 @@ export function ChannelPostList({ userId, initialPosts, onAuthorStatsChange }: C
 
   return (
     <div>
-      <div>
+      <div className={isDesktop ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5' : 'flex flex-col'}>
         {items.map((post) => (
           <ChannelPostCard
             key={post.id}
             post={post}
+            gridMode={isDesktop}
             {...(onAuthorStatsChange && { onPostLikeChange: onAuthorStatsChange })}
           />
         ))}

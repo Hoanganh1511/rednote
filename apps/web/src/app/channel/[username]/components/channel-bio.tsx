@@ -15,25 +15,23 @@ export function ChannelBio({ user }: ChannelBioProps) {
   const isLong = !!bio && (bio.split('\n').length > 2 || bio.length > 120);
 
   return (
-    <div className="mt-[22px] mb-4 space-y-2">
+    <div className="mt-3 md:mt-0 mb-4 md:mb-0 space-y-1.5 md:space-y-2">
       {/* Display name + level badge */}
       <div className="flex items-center gap-2 flex-wrap">
-        <h1 className="text-base font-medium leading-tight text-foreground">{displayName}</h1>
+        <h1 className="text-base md:text-xl font-bold leading-tight text-foreground">{displayName}</h1>
         <span className="rounded bg-[#00aeec] px-1.5 py-0.5 text-[10px] font-bold text-white leading-none">
           LV0
         </span>
       </div>
 
       {/* @username */}
-      <p className="text-xs text-muted-foreground">@{user.username}</p>
+      <p className="text-xs md:text-sm text-muted-foreground">@{user.username}</p>
 
       {/* Bio */}
       {bio && (
         <div>
           <p
-            className={`text-sm text-foreground/80 leading-relaxed ${
-              expanded ? '' : 'line-clamp-2'
-            }`}
+            className={`text-sm text-foreground/75 leading-relaxed ${expanded ? '' : 'line-clamp-2'}`}
           >
             {bio}
           </p>
@@ -49,7 +47,7 @@ export function ChannelBio({ user }: ChannelBioProps) {
       )}
 
       {/* IP Location */}
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
         <MapPin className="h-3 w-3 shrink-0" />
         <span>Vị trí IP: Việt Nam</span>
       </div>

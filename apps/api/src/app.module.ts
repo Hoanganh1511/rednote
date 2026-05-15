@@ -9,6 +9,7 @@ import { UsersModule } from './modules/users/users.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { FeaturesModule } from './modules/features/features.module';
 import { PostsModule } from './modules/posts/posts.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -25,6 +26,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     UploadModule,
     FeaturesModule,
     PostsModule,
+    NotificationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

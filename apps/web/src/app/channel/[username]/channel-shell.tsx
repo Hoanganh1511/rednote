@@ -36,13 +36,12 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
   const [coverImageSelectorOpen, setCoverImageSelectorOpen] = useState(false);
   const [profileData, setProfileData] = useState<User>(profile);
 
-  // Refetch user data from server to keep stats in sync
   const refetchUserData = useCallback(async () => {
     try {
       const response = await apiClient.get<User>(`/users/${profile.id}`);
       setProfileData(response.data);
     } catch {
-      // Silent fail - keep current state
+      // Silent fail
     }
   }, [profile.id]);
 
@@ -54,45 +53,46 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
     if (!messageDrawerOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    return () => { document.body.style.overflow = prev; };
   }, [messageDrawerOpen]);
 
   useEffect(() => {
     if (!messageDrawerOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMessageDrawerOpen(false);
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMessageDrawerOpen(false); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [messageDrawerOpen]);
 
   useEffect(() => {
-    const handleUnfollowComplete = () => {
-      setIsUnfollowing(false);
-    };
+    const handleUnfollowComplete = () => { setIsUnfollowing(false); };
     window.addEventListener('unfollowComplete', handleUnfollowComplete as EventListener);
-    return () =>
-      window.removeEventListener('unfollowComplete', handleUnfollowComplete as EventListener);
+    return () => window.removeEventListener('unfollowComplete', handleUnfollowComplete as EventListener);
   }, []);
 
   useEffect(() => {
-    if (!followingOptionsOpen) {
-      setFollowingOptionsIn(false);
-      return;
-    }
-    const id = requestAnimationFrame(() => {
-      setFollowingOptionsIn(true);
-    });
+    if (!followingOptionsOpen) { setFollowingOptionsIn(false); return; }
+    const id = requestAnimationFrame(() => { setFollowingOptionsIn(true); });
     return () => cancelAnimationFrame(id);
   }, [followingOptionsOpen]);
 
   const closeFollowingOptions = () => {
     setFollowingOptionsIn(false);
-    setTimeout(() => {
-      setFollowingOptionsOpen(false);
-    }, 500);
+    setTimeout(() => { setFollowingOptionsOpen(false); }, 500);
+  };
+
+  const displayName = profileData.displayName || profileData.username;
+  const isOwnProfile = currentUser?.id === profile.id;
+
+  const sharedUserInfoProps = {
+    user: profileData,
+    onFollowingChange: setIsFollowing,
+    onStatsClick: () => setOpenStatsDrawer(true),
+    onFollowingOptionsOpen: () => setFollowingOptionsOpen(true),
+    onFollowingOptionsClose: closeFollowingOptions,
+    onUnfollowStart: () => setIsUnfollowing(true),
+    onUnfollowEnd: () => setIsUnfollowing(false),
+    onUserDataRefresh: setProfileData,
+    onEditProfileClick: () => router.push(ROUTES.ACCOUNT_INFO),
   };
 
   return (
@@ -102,43 +102,58 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
         style={{ height: '100dvh' }}
         onScroll={handleMainScroll}
       >
-        {/* Cover — full-width, no padding */}
+        {/* Cover */}
         <ChannelCover
           coverUrl={profileData.coverUrl ?? null}
-          isOwnProfile={currentUser?.id === profile.id}
+          isOwnProfile={isOwnProfile}
           onCoverSelectClick={() => setCoverImageSelectorOpen(true)}
         />
 
-        {/* Profile content */}
-        <div className="mx-auto max-w-2xl px-4 pb-6">
-          <ChannelUserInfo
-            user={profileData}
-            onFollowingChange={setIsFollowing}
-            onStatsClick={() => setOpenStatsDrawer(true)}
-            onFollowingOptionsOpen={() => setFollowingOptionsOpen(true)}
-            onFollowingOptionsClose={closeFollowingOptions}
-            onUnfollowStart={() => setIsUnfollowing(true)}
-            onUnfollowEnd={() => setIsUnfollowing(false)}
-            onUserDataRefresh={setProfileData}
-            onEditProfileClick={() => router.push(ROUTES.ACCOUNT_INFO)}
-          />
-          <ChannelBio user={profileData} />
+        {/* ── PC Profile Section (md+) ─────────────────────────────────────── */}
+        <div className="hidden md:block bg-background border-b border-border/50">
+          <div className="mx-auto max-w-5xl px-8">
+            <div className="flex items-end gap-8 pb-6">
+              {/* Large avatar overlapping cover */}
+              <div className="-mt-14 shrink-0">
+                {profileData.avatarUrl ? (
+                  <img
+                    src={profileData.avatarUrl}
+                    alt={displayName}
+                    className="h-28 w-28 rounded-full border-4 border-background object-cover shadow-lg"
+                  />
+                ) : (
+                  <div className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-background bg-[#00aeec] shadow-lg">
+                    <span className="text-3xl font-bold text-white">
+                      {displayName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </div>
 
-          {/* Power Up bar */}
-          {/* <div className="border-border bg-background mb-4 flex items-center justify-between rounded-xl border px-4 py-3">
-            <div className="text-foreground flex items-center gap-2 text-sm font-medium">
-              <Zap className="h-4 w-4 fill-amber-400 text-amber-400" />
-              <span>Tăng sức mạnh</span>
+              {/* Bio — center */}
+              <div className="flex-1 pb-1 pt-4">
+                <ChannelBio user={profileData} />
+              </div>
+
+              {/* Stats + buttons — right */}
+              <div className="pb-1 pt-4">
+                <ChannelUserInfo {...sharedUserInfoProps} hideAvatar />
+              </div>
             </div>
-            <span className="text-muted-foreground text-xs">0 người ủng hộ</span>
-          </div> */}
+          </div>
         </div>
 
-        {/* Sticky tabs — full width */}
+        {/* ── Mobile Profile Section (< md) ───────────────────────────────── */}
+        <div className="md:hidden mx-auto max-w-2xl px-4 pb-4">
+          <ChannelUserInfo {...sharedUserInfoProps} />
+          <ChannelBio user={profileData} />
+        </div>
+
+        {/* Tabs */}
         <ChannelTabs />
 
         {/* Posts */}
-        <div className="mx-auto max-w-2xl px-4 pb-6">
+        <div className="mx-auto max-w-5xl px-4 md:px-8 pb-8 pt-5">
           <ChannelPostList
             userId={profileData.id}
             initialPosts={initialPosts}
@@ -158,84 +173,42 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
         userDisplayName={profileData.displayName || profileData.username}
       />
 
-      {/* Following options bottom sheet drawer — rendered at viewport level */}
-      {isFollowing && followingOptionsOpen ? (
+      {/* Following options bottom sheet */}
+      {isFollowing && followingOptionsOpen && (
         <div
-          className={`fixed inset-0 z-50`}
-          style={{
-            transitionDuration: '200ms',
-            transitionTimingFunction: 'cubic-bezier(0.25, 0.8, 0.25, 1)',
-            pointerEvents: followingOptionsIn ? 'auto' : 'none',
-          }}
+          className="fixed inset-0 z-50"
+          style={{ pointerEvents: followingOptionsIn ? 'auto' : 'none' }}
         >
-          {/* Backdrop */}
           <div
-            className={`fixed inset-0 bg-black/50 transition-opacity ${
-              followingOptionsIn ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{
-              transitionDuration: '500ms',
-              transitionTimingFunction: 'cubic-bezier(0.25, 0.8, 0.25, 1)',
-            }}
+            className={`fixed inset-0 bg-black/50 transition-opacity duration-500 ${followingOptionsIn ? 'opacity-100' : 'opacity-0'}`}
             onClick={closeFollowingOptions}
           />
-
-          {/* Bottom sheet */}
           <div
-            className={`bg-background border-border fixed right-0 bottom-0 left-0 z-50 rounded-t-lg border border-b-0 shadow-lg transition-transform will-change-transform ${
-              followingOptionsIn ? 'translate-y-0' : 'translate-y-full'
-            }`}
-            style={{
-              transitionDuration: '500ms',
-              transitionTimingFunction: 'cubic-bezier(0.25, 0.8, 0.25, 1)',
-            }}
+            className={`bg-background border-border fixed right-0 bottom-0 left-0 z-50 rounded-t-lg border border-b-0 shadow-lg transition-transform duration-500 will-change-transform ${followingOptionsIn ? 'translate-y-0' : 'translate-y-full'}`}
           >
             <div className="flex-1 px-[15px] py-2">
-              {/* Option: Special Follow */}
-              <button
-                onClick={() => {}}
-                className="text-foreground w-full text-left text-sm transition-opacity hover:opacity-70"
-                style={{ paddingTop: '12px', paddingBottom: '12px' }}
-              >
+              <button onClick={() => {}} className="text-foreground w-full text-left text-sm transition-opacity hover:opacity-70" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
                 Thêm người này vào danh sách Special Follow
               </button>
               <div className="bg-border my-0 h-px" />
-
-              {/* Option: Unfollow - shows confirmation */}
-              <button
-                onClick={() => setShowUnfollowConfirm(true)}
-                className="w-full text-left text-sm text-red-600 transition-opacity hover:opacity-70"
-                style={{ paddingTop: '12px', paddingBottom: '12px' }}
-              >
+              <button onClick={() => setShowUnfollowConfirm(true)} className="w-full text-left text-sm text-red-600 transition-opacity hover:opacity-70" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
                 Unfollow
               </button>
             </div>
-
-            {/* Divider */}
             <div className="bg-border h-[2px]" />
-
-            {/* Cancel button — separated at bottom */}
-            <button
-              onClick={closeFollowingOptions}
-              className="text-foreground w-full py-3 text-center text-sm font-medium transition-opacity hover:opacity-70"
-            >
+            <button onClick={closeFollowingOptions} className="text-foreground w-full py-3 text-center text-sm font-medium transition-opacity hover:opacity-70">
               Cancel
             </button>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {/* Unfollow confirmation dialog */}
       <Dialog
         open={showUnfollowConfirm}
         onClose={() => setShowUnfollowConfirm(false)}
         title="Hủy theo dõi?"
         actions={[
-          {
-            label: 'Hủy',
-            variant: 'outline',
-            onClick: () => setShowUnfollowConfirm(false),
-          },
+          { label: 'Hủy', variant: 'outline', onClick: () => setShowUnfollowConfirm(false) },
           {
             label: isUnfollowing ? 'Đang hủy...' : 'Hủy theo dõi',
             onClick: () => {
@@ -251,20 +224,11 @@ export function ChannelShell({ profile, initialPosts }: ChannelShellProps) {
         Bạn sẽ không còn nhận được thông tin về {profileData.displayName || profileData.username}
       </Dialog>
 
-      {/* Stats drawer — viewport level to avoid clipping */}
-      <ChannelStatsDrawer
-        open={openStatsDrawer}
-        onClose={() => setOpenStatsDrawer(false)}
-        user={profileData}
-      />
-
-      {/* Cover image selector drawer */}
+      <ChannelStatsDrawer open={openStatsDrawer} onClose={() => setOpenStatsDrawer(false)} user={profileData} />
       <CoverImageSelectorDrawer
         open={coverImageSelectorOpen}
         onClose={() => setCoverImageSelectorOpen(false)}
-        onCoverSelected={(url) => {
-          setProfileData((prev) => ({ ...prev, coverUrl: url }));
-        }}
+        onCoverSelected={(url) => { setProfileData((prev) => ({ ...prev, coverUrl: url })); }}
       />
     </div>
   );

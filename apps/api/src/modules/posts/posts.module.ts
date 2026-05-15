@@ -8,6 +8,7 @@ import { PostEntity } from './post.entity';
 import { PostLikeEntity } from './post-like.entity';
 import { UserEntity } from '../users/user.entity';
 import { FollowEntity } from '../users/follow.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { FollowEntity } from '../users/follow.entity';
         secret: config.getOrThrow<string>('JWT_SECRET'),
       }),
     }),
+    NotificationsModule,
   ],
   controllers: [PostsController],
   providers: [PostsService],

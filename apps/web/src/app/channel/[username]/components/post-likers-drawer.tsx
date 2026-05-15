@@ -146,7 +146,7 @@ export function PostLikersDrawer({ open, postId, onClose }: PostLikersDrawerProp
       // Rollback on error
       setFollowingMap((prev) => ({
         ...prev,
-        [userId]: wasFollowing,
+        [userId]: wasFollowing ?? false,
       }));
     } finally {
       setLoadingFollowId(null);

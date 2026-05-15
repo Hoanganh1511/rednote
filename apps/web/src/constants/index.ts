@@ -18,6 +18,7 @@ export const ROUTES = {
   UPLOAD: '/upload',
   SETTINGS: '/settings',
   ACCOUNT_INFO: '/account/info',
+  NOTIFICATIONS: '/notifications',
 } as const;
 
 export const QUERY_KEYS = {
@@ -29,6 +30,8 @@ export const QUERY_KEYS = {
   FEED: 'feed',
   POSTS_FEED: 'posts-feed',
   POST_LIKE: (postId: string) => ['post-like', postId] as const,
+  NOTIFICATIONS: 'notifications',
+  NOTIFICATIONS_UNREAD: 'notifications-unread',
 } as const;
 
 export const PAGINATION = {

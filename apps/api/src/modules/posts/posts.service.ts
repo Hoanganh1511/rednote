@@ -17,6 +17,8 @@ import { ListFeedPostsDto } from './dto/list-feed-posts.dto';
 import { UserEntity } from '../users/user.entity';
 import { FollowEntity } from '../users/follow.entity';
 import { POSTS_FEED_PAGE_SIZE } from './posts.constants';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/notification.entity';
 
 @Injectable()
 export class PostsService {
@@ -29,9 +31,17 @@ export class PostsService {
     private readonly postLikeRepo: Repository<PostLikeEntity>,
     @InjectRepository(FollowEntity)
     private readonly followRepo: Repository<FollowEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
     private readonly jwtService: JwtService,
     private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
+
+  private extractMentions(content: string): string[] {
+    const matches = content.match(/@([a-zA-Z0-9_]+)/g) ?? [];
+    return [...new Set(matches.map((m) => m.slice(1)))];
+  }
 
   private calculateAge(birthday: string | null): number | null {
     if (!birthday) return null;
@@ -118,7 +128,31 @@ export class PostsService {
       status,
       publishedAt: status === 'published' ? new Date() : null,
     });
-    return this.savePostHandlingDbMismatch(post);
+    const saved = await this.savePostHandlingDbMismatch(post);
+
+    const mentionedUsernames = this.extractMentions(contentRaw);
+    if (mentionedUsernames.length > 0) {
+      const mentionedUsers = await this.userRepo.find({
+        where: { username: In(mentionedUsernames) },
+        select: ['id'],
+      });
+      await Promise.all(
+        mentionedUsers.map((u) =>
+          this.notificationsService
+            .createNotification({
+              recipientId: u.id,
+              actorId: userId,
+              type: NotificationType.MENTION,
+              entityId: saved.id,
+              entityType: 'post',
+              metadata: { postContent: contentRaw.slice(0, 120) },
+            })
+            .catch((err) => this.logger.error('Mention notification failed', err)),
+        ),
+      );
+    }
+
+    return saved;
   }
 
   async updatePost(userId: string, postId: string, dto: UpdatePostDto): Promise<PostEntity> {
@@ -410,6 +444,22 @@ export class PostsService {
       }
 
       await queryRunner.commitTransaction();
+
+      if (isLiking) {
+        this.notificationsService
+          .createNotification({
+            recipientId: authorId,
+            actorId: userId,
+            type: NotificationType.LIKE_POST,
+            entityId: postId,
+            entityType: 'post',
+            metadata: {
+              postImageUrl: post.imageUrls[0] ?? null,
+              postContent: post.content.slice(0, 120),
+            },
+          })
+          .catch((err) => this.logger.error('Like notification failed', err));
+      }
 
       const likeCount = await this.postLikeRepo.count({ where: { postId } });
       return { liked: isLiking, likeCount };

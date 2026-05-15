@@ -1,4 +1,8 @@
 import 'reflect-metadata';
+import { types } from 'pg';
+// TIMESTAMP WITHOUT TIME ZONE (OID 1114): pg default parses as local time (ES2015 spec).
+// Override to always treat as UTC so Date objects are correct regardless of server timezone.
+types.setTypeParser(1114, (val: string) => new Date(val.replace(' ', 'T') + 'Z'));
 import { NestFactory, Reflector } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { ValidationPipe, VersioningType } from '@nestjs/common';

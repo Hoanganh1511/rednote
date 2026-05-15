@@ -1,18 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { MessageCircle, Bookmark, ChevronRight, LogOut, ScanEye, X, Upload, type LucideIcon } from 'lucide-react';
+import { MessageCircle, Bookmark, ScanEye, X, Upload, Bell, type LucideIcon } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useLoginModalStore } from '@/stores/login-modal-store';
 import { SearchDropdown } from '@/components/search-dropdown';
 import { useUserStore } from '@/stores/user-store';
-import { apiClient } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { ROUTES, SITE_MAIN_CONTENT_CLASS } from '@/constants';
 import { useNavigationWithLoader } from '@/hooks/use-navigation-with-loader';
 import type { User } from 'shared-types';
 import { ComingSoonBadge } from '@/components/ui/coming-soon-badge';
+import { useNotificationUnreadCounts } from '@/hooks/use-notifications';
+import { NotificationDrawer } from '@/components/notifications/notification-drawer';
 
 const LEFT_LINKS: Array<{ label: string; href: string; icon: LucideIcon | null; comingSoon?: boolean }> = [
   { label: 'Trang chủ', href: ROUTES.HOME, icon: ScanEye },
@@ -25,11 +26,6 @@ const RIGHT_ACTIONS: Array<{ label: string; href: string; icon: LucideIcon; comi
   { label: 'Tin nhắn', href: '/messages', icon: MessageCircle, comingSoon: true },
 ];
 
-const MENU_ITEMS: Array<{ label: string; href: string; comingSoon?: boolean }> = [
-  { label: 'Trung tâm cá nhân', href: '/account/home' },
-  { label: 'Quản lý đệ trình', href: '/manage', comingSoon: true },
-  { label: 'Các dịch vụ được đề xuất', href: '/services', comingSoon: true },
-];
 
 export function Header() {
   const [mounted, setMounted] = useState(false);
@@ -65,39 +61,28 @@ export function Header() {
             ))}
           </nav>
 
-          <div className="flex flex-1 items-center justify-center gap-3">
-            <div className="flex w-full max-w-xl items-center gap-3">
+          {/* Search + user — center */}
+          <div className="flex flex-1 items-center justify-center gap-2">
+            <div className="w-full max-w-xl">
               <SearchDropdown />
-
-              {!mounted ? (
-                <Skeleton variant="circle" className="h-8 w-8 shrink-0" />
-              ) : user ? (
-                <UserMenu user={user} />
-              ) : (
-                <button
-                  onClick={() => openLoginModal()}
-                  className="hidden sm:block shrink-0 rounded-md bg-[#00aeec] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
-                >
-                  Đăng nhập
-                </button>
-              )}
             </div>
-
-            {/* Mobile: login button only */}
-            {!user && !mounted && (
-              <Skeleton variant="circle" className="sm:hidden h-8 w-8 shrink-0" />
-            )}
-            {!user && mounted && (
+            {!mounted ? (
+              <Skeleton variant="circle" className="h-9 w-9 shrink-0" />
+            ) : user ? (
+              <UserMenu user={user} />
+            ) : (
               <button
                 onClick={() => openLoginModal()}
-                className="sm:hidden shrink-0 rounded-md bg-[#00aeec] px-3 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                className="shrink-0 rounded-md bg-[#00aeec] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
               >
                 Đăng nhập
               </button>
             )}
           </div>
 
+          {/* Right nav: actions only */}
           <nav className="hidden shrink-0 items-center gap-x-1 lg:flex">
+            {user && <NotificationBell />}
             {RIGHT_ACTIONS.map(({ label, href, icon: Icon, comingSoon }) => (
               <Link
                 key={href}
@@ -212,21 +197,9 @@ function CollectionDropdown() {
 }
 
 function UserMenu({ user }: { user: User }) {
-  const logout = useUserStore((s) => s.logout);
   const justLoggedIn = useUserStore((s) => s.justLoggedIn);
   const setJustLoggedIn = useUserStore((s) => s.setJustLoggedIn);
   const router = useNavigationWithLoader();
-
-  const handleLogout = async () => {
-    try {
-      await apiClient.post('/auth/logout');
-    } catch {
-      /* ignore */
-    }
-    logout();
-    router.push('/');
-  };
-
   const initial = (user.displayName ?? user.username ?? '?')[0]?.toUpperCase();
 
   const handleAvatarClick = (e: React.MouseEvent) => {
@@ -235,39 +208,51 @@ function UserMenu({ user }: { user: User }) {
   };
 
   return (
-    <>
-      <div className="relative shrink-0 cursor-pointer group">
-        {justLoggedIn && (
-          <LoginGreetBubble
-            name={user.displayName ?? user.username ?? 'bạn'}
-            onDismiss={() => setJustLoggedIn(false)}
-          />
-        )}
+    <div className="relative shrink-0 cursor-pointer">
+      {justLoggedIn && (
+        <LoginGreetBubble
+          name={user.displayName ?? user.username ?? 'bạn'}
+          onDismiss={() => setJustLoggedIn(false)}
+        />
+      )}
+      <button
+        onClick={handleAvatarClick}
+        className="flex h-10 w-10 items-center justify-center rounded-full hover:opacity-80 transition-opacity"
+      >
+        <div className={cn('h-full w-full overflow-hidden rounded-full bg-[#00aeec] text-sm font-semibold text-white', 'flex items-center justify-center')}>
+          {user.avatarUrl ? (
+            <img src={user.avatarUrl} alt={user.displayName ?? user.username ?? ''} className="h-full w-full object-cover" />
+          ) : initial}
+        </div>
+      </button>
+    </div>
+  );
+}
 
-        <button
-          onClick={handleAvatarClick}
-          className="flex items-center justify-center h-10 w-10 rounded-full hover:opacity-80 transition-opacity"
-          title={`Trang ${user.displayName ?? user.username}`}
-          aria-label={`Trang ${user.displayName ?? user.username}`}
-        >
-          <div
-            className={cn(
-              'h-full w-full overflow-hidden rounded-full bg-[#00aeec] text-sm font-semibold text-white',
-              'flex items-center justify-center',
-            )}
-          >
-            {user.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.displayName ?? ''}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              initial
-            )}
-          </div>
-        </button>
-      </div>
+function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const { data: counts } = useNotificationUnreadCounts();
+  const total = counts?.total ?? 0;
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="relative text-muted-foreground hover:text-accent-foreground hover:bg-accent/20 flex flex-col items-center gap-y-2 rounded-md px-3 py-1 transition-colors"
+        aria-label="Thông báo"
+      >
+        <div className="relative">
+          <Bell className="h-5 w-5" />
+          {total > 0 && (
+            <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white leading-none">
+              {total > 99 ? '99+' : total}
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] leading-none font-medium">Thông báo</span>
+      </button>
+
+      <NotificationDrawer open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

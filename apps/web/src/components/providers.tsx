@@ -9,6 +9,12 @@ import { LiveNotificationStack } from '@/components/ui/live-notification';
 import { Toaster } from 'sonner';
 import { NavigationLoaderProvider } from '@/components/navigation-loader';
 import type { User } from 'shared-types';
+import { useNotificationSocket } from '@/hooks/use-notification-socket';
+
+function NotificationSocketInit() {
+  useNotificationSocket();
+  return null;
+}
 
 function AuthRefresh() {
   const accessToken = useUserStore((s) => s.accessToken);
@@ -34,6 +40,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <NavigationLoaderProvider>
       <QueryClientProvider client={queryClient}>
         <AuthRefresh />
+        <NotificationSocketInit />
         {children}
         <LiveNotificationStack />
         <Toaster position="top-center" richColors closeButton />

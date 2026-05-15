@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,9 +12,13 @@ import { FollowEntity } from './follow.entity';
 import { PostEntity } from '../posts/post.entity';
 import { UploadService } from '../upload/upload.service';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/notification.entity';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
@@ -23,6 +28,7 @@ export class UsersService {
     private readonly postRepo: Repository<PostEntity>,
     private readonly uploadService: UploadService,
     private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async findById(id: string): Promise<UserEntity> {
@@ -177,6 +183,14 @@ export class UsersService {
       }
 
       await queryRunner.commitTransaction();
+
+      this.notificationsService
+        .createNotification({
+          recipientId: followingId,
+          actorId: followerId,
+          type: NotificationType.NEW_FOLLOW,
+        })
+        .catch((err) => this.logger.error('Follow notification failed', err));
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;

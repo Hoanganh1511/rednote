@@ -6,9 +6,10 @@ import { PostEntity } from '../posts/post.entity';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { UploadModule } from '../upload/upload.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity, FollowEntity, PostEntity]), UploadModule],
+  imports: [TypeOrmModule.forFeature([UserEntity, FollowEntity, PostEntity]), UploadModule, NotificationsModule],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],
